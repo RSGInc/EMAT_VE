@@ -1,0 +1,1263 @@
+---
+# VEState Scope Definition for ODOT OTP
+
+scope:
+    name: VEState
+    desc: VisionEval State Strategic Planning Model. ODOT OTP
+
+inputs:
+
+    # LAND-USE
+    LUDENSITYMIX:
+        # TMIP - CATEGORICAL
+        # SCENARIOFOLDER: LUDENSITYMIX
+        # FILENAME: marea_mix_targets.csv
+        # MODEL NAME: _manipulate_ludensity
+        shortname: Urban Mix Prop
+        address: LUDENSITYMIX
+        ptype: exogenous uncertainty
+        dtype: float
+        desc: Urban proportion for each marea by year
+        default: 0
+        min: 0  #- AP   # AP 22 input
+        max: 1  #- MM   # Multimodal input
+
+    INTDENSITYSCEN:
+        # TMIP - MIXTURE
+        # SCENARIOFOLDER: INTDENSITYSCEN
+        # FILENAME: marea_d3bpo4_adj.csv
+        # MODEL NAME: _manipulate_intdensity
+        shortname: D3BPO4 Adj
+        address: INTDENSITYSCEN
+        ptype: exogenous uncertainty
+        dtype: float
+        desc: D3BPO4 adjustment factor for each marea by year by Urban, Town, and Rural segments.
+        default: 0 # Default no adjustment to the D3BPO4 (AP)
+                   # marea_d3bpo4_adj: UrbanD3bpo4Adj,TownD3bpo4Adj,RuralD3bpo4Adj
+        max: 1
+                   # marea_d3bpo4_adj: UrbanD3bpo4Adj,TownD3bpo4Adj,RuralD3bpo4Adj (MM)
+        min: 0
+                   # marea_d3bpo4_adj: UrbanD3bpo4Adj,TownD3bpo4Adj,RuralD3bpo4Adj
+            
+    CARSVCAVAILSCEN:
+        # TMIP - CATEGORICAL
+        # SCENARIOFOLDER: CARSVCAVAILSCEN
+        # FILENAME: marea_carsvc_availability.csv
+        # MODEL NAME: _manipulate_carsvcavail
+        shortname: Car Service Availability
+        address: CARSVCAVAILSCEN
+        ptype: exogenous uncertainty
+        dtype: cat
+        desc: Different levels of car service availability
+        default: mid
+        values:
+            - low     # low level of car services availability
+                      # marea_carsvc_availability: CenterPropHighCarSvc,InnerPropHighCarSvc,OuterPropHighCarSvc,FringePropHighCarSvc,CenterPropShdCarSvc,InnerPropShdCarSvc,OuterPropShdCarSvc,FringePropShdCarSvc
+            - mid     # mid level of car services availability
+                      # marea_carsvc_availability: CenterPropHighCarSvc,InnerPropHighCarSvc,OuterPropHighCarSvc,FringePropHighCarSvc,CenterPropShdCarSvc,InnerPropShdCarSvc,OuterPropShdCarSvc,FringePropShdCarSvc
+            - high    # low level of car services availability
+                      # marea_carsvc_availability: CenterPropHighCarSvc,InnerPropHighCarSvc,OuterPropHighCarSvc,FringePropHighCarSvc,CenterPropShdCarSvc,InnerPropShdCarSvc,OuterPropShdCarSvc,FringePropShdCarSvc
+        
+    SHDCARSVCOCCUPRATE:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: SHDCARSVCOCCUPRATE
+        # FILENAME: region_carsvc_shd_occup.csv
+        # MODEL NAME: _manipulate_shdcarsvc
+        shortname: Shared Car Svc Occup
+        address: SHDCARSVCOCCUPRATE
+        ptype: exogenous uncertainty
+        dtype: float
+        desc: Average occupancy in shared car services for future year.
+        default: 2.25 # Default average occupancy rate
+                      # region_carsvc_shd_occup: ShdCarSvcAveOccup
+        max: 3        # Highest estimate of average occupancy rate
+                      # region_carsvc_shd_occup: ShdCarSvcAveOccup
+        min: 1.0      # Lowest estimate of average occupancy rate
+                      # region_carsvc_shd_occup: ShdCarSvcAveOccup
+        
+
+    CARCHARGEAVAILSCEN:
+        # TMIP - MIXTURE
+        # SCENARIOFOLDER: CARCHARGEAVAILSCEN
+        # FILENAME: azone_charging_availability.csv
+        # MODEL NAME: _manipulate_carchargeavailscen
+        shortname: Car Charging Availability
+        address: CARCHARGEAVAILSCEN
+        ptype: exogenous uncertainty
+        dtype: float
+        desc: Car charging availability scenario.
+        default: 0  # Default no adjustment to the charging availability (AP)
+                   
+        max: 1      # 100 % increase in charging availability for MF and GQ and 11.7647% for SF (MM)
+        min: 0      # marea_d3bpo4_adj: UrbanD3bpo4Adj,TownD3bpo4Adj,RuralD3bpo4Adj    
+    
+
+    TRANSITSCEN:
+        # TMIP - MIXTURE
+        # SCENARIOFOLDER: TRANSITSCEN
+        # FILENAME: marea_transit_biofuel_mix.csv, marea_transit_fuel.csv, marea_transit_powertrain_prop.csv
+        # MODEL NAME: _manipulate_transitscen
+        shortname: Transit Scenario
+        address: TRANSITSCEN
+        ptype: exogenous uncertainty
+        dtype: float
+        desc: Transit powertrain and fuel scenario
+        default: 0  # Transit with low EV
+                   
+        max: 1      # Transit with high EV
+        min: 0      # Transit with low EV
+    
+    POWERTRAINSCEN:
+        # TMIP - CATEGORICAL
+        # SCENARIOFOLDER: POWERTRAINSCEN
+        # FILENAME: run_model.R (script is modified to use different version of model script)
+        # MODEL NAME: _manipulate_powertrainscen
+        shortname: Powertrain and Fuels
+        address: POWERTRAINSCEN
+        ptype: exogenous uncertainty
+        dtype: cat
+        desc: Powertrain and Fuels package scenario.
+        default: LOWEV
+        values:
+            - LOWEV     # Current funding
+            - MEDHH     # Multimodal
+
+    SOVDIVIVERTSCEN:
+        # TMIP - MIXTURE
+        # SCENARIOFOLDER: SOVDIVIVERTSCEN
+        # FILENAME: azone_prop_sov_dvmt_diverted.csv
+        # MODELNAME: _manipulate_sovdivert
+        shortname: SOV Diversion
+        address: SOVDIVIVERTSCEN
+        ptype: policy lever
+        dtype: float
+        desc: SOV diversion scenarios
+        default: 0  # Default no adjustment to the SOV Diversion (AP)                   
+        max: 1      # SOV Diversion from (MM)
+        min: 0      # SOV Diversion from AP
+
+    TAXSCEN:
+        # TMIP - MIXTURE
+        # SCENARIOFOLDER: TAXSCEN
+        # FILENAME: azone_veh_use_taxes.csv
+        # MODELNAME: _manipulate_taxes
+        shortname: Tax Scenario
+        address: TAXSCEN
+        ptype: policy lever
+        dtype: float
+        desc: Different taxes scenarios.
+        default: 0
+        max: 1          # VMTTax High = 0.047/mile 
+        min: 0          # VMTTax Low = 0.013/mile 
+
+
+    LANEMILESCEN:
+        # TMIP - MIXTURE
+        # SCENARIOFOLDER: LANEMILESCEN
+        # FILENAME: marea_lane_miles.csv
+        # MODELNAME: _manipulate_mlanemiles
+        shortname: Marea Lane Miles
+        address: LANEMILESCEN
+        ptype: policy lever
+        dtype: float
+        desc: Different marea lane mile scenario
+        default: 0
+        max: 1          # Operations emphasis
+        min: 0          # Current funding/Multimodal/Preservation emphasis
+
+
+    OPSDEPLOYSCEN:
+        # TMIP - MIXTURE
+        # SCENARIOFOLDER: OPSDEPLOYSCEN
+        # FILENAME: marea_operations_deployment.csv
+        # MODELNAME: _manipulate_opsdeployment
+        shortname: Operations Deployment Scenario
+        address: OPSDEPLOYSCEN
+        ptype: policy lever
+        dtype: float
+        desc: Different operations deployment scenarios.
+        default: 0
+        min: 0  #- AP    # Curent funding
+        max: 1  #- MMPV  # Multimodal/Preservation emphasis
+
+
+    TRANSITSERVICESCEN:
+        # TMIP - MIXTURE
+        # SCENARIOFOLDER: TRANSITSERVICESCEN
+        # FILENAME: marea_transit_service.csv
+        # MODELNAME: _manipulate_transitservice
+        shortname: Transit Service Investment
+        address: TRANSITSERVICESCEN
+        ptype: policy lever
+        dtype: float
+        desc: Different transit service scenario.
+        default: 0
+        min: 0  # Curent funding
+        max: 1  # Multimodal
+
+
+    TDMINVESTMENTSCEN:
+        # TMIP - MIXTURE
+        # SCENARIOFOLDER: TDMINVESTMENTSCEN
+        # FILENAME: marea_travel-demand-mgt_by_area-type.csv
+        # MODELNAME: _manipulate_tdmareatype
+        shortname: Travel Demand Management
+        address: TDMINVESTMENTSCEN
+        ptype: policy lever
+        dtype: float
+        desc: Different TDM investment scenario.
+        default: 0      # Curent funding Operations emphasis/Preservation emphasis 
+        max: 1          # Multimodal
+        min: 0          # Curent funding Operations emphasis/Preservation emphasis
+
+outputs:
+    HouseholdDvmtPerHh:
+        kind: info
+        desc: Average daily vehicle miles traveled by households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDvmtPerHh
+            - 2050
+    HouseholdDvmtPerPrsn:
+        kind: info
+        desc: Average daily vehicle miles traveled per person in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDvmtPerPrsn
+            - 2050
+    HouseholdDvmtPerHhIncLess25K:
+        kind: info
+        desc: Average daily vehicle miles traveled by households earning less than 25K in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDvmtPerHhIncLess25K
+            - 2050
+    HouseholdDvmtPerHhInc25Kto50K:
+        kind: info
+        desc: Average daily vehicle miles traveled by households earning between 25K to 50K in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDvmtPerHhInc25Kto50K
+            - 2050
+    HouseholdDvmtPerHhIncOver50K:
+        kind: info
+        desc: Average daily vehicle miles traveled by households earning over 50K in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDvmtPerHhIncOver50K
+            - 2050
+    HouseholdDvmtPerPrsnUrban:
+        kind: info
+        desc: Per capita DVMT for urban households
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDvmtPerPrsnUrban
+            - 2050
+    HouseholdDvmtPerPrsnTown:
+        kind: info
+        desc: Per capita DVMT for town households
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDvmtPerPrsnTown
+            - 2050
+    HouseholdDvmtPerPrsnRural:
+        kind: info
+        desc: Per capita DVMT for rural households
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDvmtPerPrsnRural
+            - 2050
+    HouseholdCarSvcDvmtPerHh:
+        kind: info
+        desc: Average daily vehicle miles traveled in car services by households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdCarSvcDvmtPerHh
+            - 2050
+    HouseholdCarSvcDvmtPerPrsn:
+        kind: info
+        desc: Average daily vehicle miles traveled in car services per person in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdCarSvcDvmtPerPrsn
+            - 2050
+    HouseholdCarSvcDvmtPerPrsnUrban:
+        kind: info
+        desc: Average daily vehicle miles traveled in car services per person for urban households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdCarSvcDvmtPerPrsnUrban
+            - 2050
+    HouseholdCarSvcDvmtPerPrsnTown:
+        kind: info
+        desc: Average daily vehicle miles traveled in car services per person for town households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdCarSvcDvmtPerPrsnTown
+            - 2050
+    HouseholdCarSvcDvmtPerPrsnRural:
+        kind: info
+        desc: Average daily vehicle miles traveled in car services per person for rural households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdCarSvcDvmtPerPrsnRural
+            - 2050
+    HouseholdDriverlessDvmtPerPrsnUrban:
+        kind: info
+        desc: Average daily vehicle miles traveled in driverless vehicles per person for urban households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDriverlessDvmtPerPrsnUrban
+            - 2050
+    HouseholdDriverlessDvmtPerPrsnTown:
+        kind: info
+        desc: Average daily vehicle miles traveled in driverless vehicles per person for town households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDriverlessDvmtPerPrsnTown
+            - 2050
+    HouseholdDriverlessDvmtPerPrsnRural:
+        kind: info
+        desc: Average daily vehicle miles traveled in driverless vehicles per person for rural households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDriverlessDvmtPerPrsnRural
+            - 2050
+    TotalDvmt:
+        kind: info
+        desc: Total daily vehicle miles traveled all vehicles in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TotalDvmt
+            - 2050
+    TotalDvmtPerPrsn:
+        kind: info
+        desc: Total per capita daily vehicle miles traveled by all vehicles in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TotalDvmtPerPrsn
+            - 2050
+    TotalGGEPerCapita:
+        kind: minimize
+        desc: Total gasoline equivalent gallon consumption per capita in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TotalGGEPerCapita
+            - 2050
+    TotalCO2e:
+        kind: info
+        desc: Total daily CO2e from all vehicles in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TotalCO2e
+            - 2050
+    HouseholdCO2ePerPrsn:
+        kind: minimize
+        desc: Total CO2 equivalent green house gas emission by households per capita in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdCO2ePerPrsn
+            - 2050
+    HouseholdCO2ePerMile:
+        kind: minimize
+        desc: Total CO2 equivalent green house gas emission by households per mile in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdCO2ePerMile
+            - 2050    
+    HouseholdCO2ePerMileUrban:
+        kind: minimize
+        desc: Total CO2 equivalent green house gas emission by urban households per mile in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdCO2ePerMileUrban
+            - 2050    
+    HouseholdCO2ePerMileTown:
+        kind: minimize
+        desc: Total CO2 equivalent green house gas emission by town households per mile in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdCO2ePerMileTown
+            - 2050    
+    HouseholdCO2ePerMileRural:
+        kind: minimize
+        desc: Total CO2 equivalent green house gas emission by rural households per mile in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdCO2ePerMileRural
+            - 2050    
+    ComSvcCO2eRate_Metro:
+        kind: minimize
+        desc: Average greenhouse gas emissions per mile of commercial service vehicle travel attributable to households and businesses in Metro area in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - ComSvcCO2eRate
+            - Metro    
+    ComSvcCO2eRate_SalemKeizer:
+        kind: minimize
+        desc: Average greenhouse gas emissions per mile of commercial service vehicle travel attributable to households and businesses in SalemKeizer area in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - ComSvcCO2eRate
+            - SalemKeizer    
+    BusCO2eRate_Metro:
+        kind: minimize
+        desc: Average greenhouse gas emissions per mile of public transit bus travel in Metro area in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - BusCO2eRate
+            - Metro  
+    BusCO2eRate_SalemKeizer:
+        kind: minimize
+        desc: Average greenhouse gas emissions per mile of public transit bus travel in SalemKeizer area in 2050
+        transform: none
+        metamodeltype: lolinearg
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - BusCO2eRate
+            - SalemKeizer  
+    HvyTrkAveUrbanCO2eRate_Metro:
+        kind: minimize
+        desc: Average greenhouse gas emissions per mile of heavy truck travel in Metro area in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - HvyTrkAveUrbanCO2eRate
+            - Metro    
+    HvyTrkAveUrbanCO2eRate_SalemKeizer:
+        kind: minimize
+        desc: Average greenhouse gas emissions per mile of heavy truck travel in SalemKeizer area in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - HvyTrkAveUrbanCO2eRate
+            - SalemKeizer  
+    TransitTrips:
+        kind: info
+        desc: Total number of transit trips
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TransitTrips
+            - 2050
+    TransitTripsPerCapita:
+        kind: info
+        desc: Transit trips per capita
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TransitTripsPerCapita
+            - 2050
+    TransitPMTPerPrsnUrban:
+        kind: info
+        desc: Transit PMT per capita by urban households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TransitPMTPerPrsnUrban
+            - 2050
+    TransitPMTPerPrsnTown:
+        kind: info
+        desc: Transit PMT per capita by town households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TransitPMTPerPrsnTown
+            - 2050
+    TransitPMTPerPrsnRural:
+        kind: info
+        desc: Transit PMT per capita by rural households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TransitPMTPerPrsnRural
+            - 2050
+    SovToBikeTripPerCapita:
+        kind: info
+        desc: Number of SOV trips diverted to bike trips per capita
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - SovToBikeTripPerCapita
+            - 2050
+    BikeTripsPerCapita:
+        kind: info
+        desc: Total number of bike trips per capita
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - BikeTripsPerCapita
+            - 2050
+    BikePMTPerPrsnUrban:
+        kind: info
+        desc: Bike PMT per capita by urban households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - BikePMTPerPrsnUrban
+            - 2050
+    BikePMTPerPrsnTown:
+        kind: info
+        desc: Bike PMT per capita by town households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - BikePMTPerPrsnTown
+            - 2050
+    BikePMTPerPrsnRural:
+        kind: info
+        desc: Bike PMT per capita by rural households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - BikePMTPerPrsnRural
+            - 2050
+    WalkTripsPerCapita:
+        kind: info
+        desc: Total number of walk trips
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - WalkTripsPerCapita
+            - 2050
+    WalkPMTPerPrsnUrban:
+        kind: info
+        desc: Walk PMT per capita by urban households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - WalkPMTPerPrsnUrban
+            - 2050
+    WalkPMTPerPrsnTown:
+        kind: info
+        desc: Walk PMT per capita by town households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - WalkPMTPerPrsnTown
+            - 2050
+    WalkPMTPerPrsnRural:
+        kind: info
+        desc: Walk PMT per capita by rural households in 2050
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - WalkPMTPerPrsnRural
+            - 2050
+    HhFuelTax:
+        kind: info
+        desc: HhFuelTax
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HhFuelTax
+            - 2050
+    HhPevFuelTax:
+        kind: info
+        desc: HhPevFuelTax
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HhPevFuelTax
+            - 2050
+    ComSvcFuelTax:
+        kind: info
+        desc: ComSvcFuelTax
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - ComSvcFuelTax
+            - 2050
+    VmtTax:
+        kind: info
+        desc: VmtTax
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - VmtTax
+            - 2050
+    ExtraVmtTax:
+        kind: info
+        desc: ExtraVmtTax
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - ExtraVmtTax
+            - 2050
+    CongFee:
+        kind: info
+        desc: CongFee
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - CongFee
+            - 2050
+    VehOwnTax:
+        kind: info
+        desc: VehOwnTax
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - VehOwnTax
+            - 2050
+    EnergyCost:
+        kind: info
+        desc: EnergyCost
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - EnergyCost
+            - 2050
+    SocEnvCost:
+        kind: info
+        desc: SocEnvCost
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - SocEnvCost
+            - 2050
+    CarSvcCost:
+        kind: info
+        desc: CarSvcCost
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - CarSvcCost
+            - 2050
+    TotalVehOwnCost:
+        kind: info
+        desc: TotalVehOwnCost
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TotalVehOwnCost
+            - 2050
+    TotalVehUseCost:
+        kind: info
+        desc: TotalVehUseCost
+        transform: none
+        metamodeltype: log
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - TotalVehUseCost
+            - 2050
+    HouseholdDriverlessDvmtPerHh:
+        kind: info
+        desc: DVMT consumed in driverless vehicles per household
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - HouseholdDriverlessDvmtPerHh
+            - 2050
+    AdjDriverlessDvmtPerHh:
+        kind: info
+        desc: Extra dvmt in driverless vehicles due to remote access and added passenger travel per household
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - AdjDriverlessDvmtPerHh
+            - 2050
+    CarSvcDeadheadDvmtPerPrsn:
+        kind: info
+        desc: Car service deadhead DVMT per capita
+        transform: none
+        metamodeltype: linear
+        parser:
+            file: state_validation_measures.csv
+            loc:
+            - CarSvcDeadheadDvmtPerPrsn
+            - 2050
+    FwyDvmtPropExtCong_Metro:
+        kind: info
+        desc: Average freeway speed (miles per hour) when congestion is extreme in Metro area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - FwyDvmtPropExtCong
+            - Metro
+    FwyDvmtPropExtCong_SalemKeizer:
+        kind: info
+        desc: Average freeway speed (miles per hour) when congestion is extreme in SalemKeizer area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - FwyDvmtPropExtCong
+            - SalemKeizer
+    ArtDvmtPropExtCong_Metro:
+        kind: info
+        desc: Average arterial speed (miles per hour) when congestion is extreme in Metro area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - ArtDvmtPropExtCong
+            - Metro
+    ArtDvmtPropExtCong_SalemKeizer:
+        kind: info
+        desc: Average arterial speed (miles per hour) when congestion is extreme in SalemKeizer area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - ArtDvmtPropExtCong
+            - SalemKeizer
+    FwyExtCongTTI_Metro:
+        kind: info
+        desc: Average freeway travel time index when congestion is extreme in Metro area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - FwyExtCongTTI
+            - Metro
+    FwyExtCongTTI_SalemKeizer:
+        kind: info
+        desc: Average freeway travel time index when congestion is extreme in SalemKeizer area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - FwyExtCongTTI
+            - SalemKeizer
+    ArtExtCongTTI_Metro:
+        kind: info
+        desc: Average arterial travel time index when congestion is extreme in Metro area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - ArtExtCongTTI
+            - Metro
+    ArtExtCongTTI_SalemKeizer:
+        kind: info
+        desc: Average arterial travel time index when congestion is extreme in SalemKeizer area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - ArtExtCongTTI
+            - SalemKeizer
+    LdvAveSpeed_Metro:
+        kind: info
+        desc: Average speed (miles per hour) of light-duty vehicle travel in Metro area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - LdvAveSpeed
+            - Metro
+    LdvAveSpeed_SalemKeizer:
+        kind: info
+        desc: Average speed (miles per hour) of light-duty vehicle travel in SalemKeizer area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - LdvAveSpeed
+            - SalemKeizer
+    HvyTrkAveSpeed_Metro:
+        kind: info
+        desc: Average speed (miles per hour) of heavy truck travel in Metro area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - HvyTrkAveSpeed
+            - Metro
+    HvyTrkAveSpeed_SalemKeizer:
+        kind: info
+        desc: Average speed (miles per hour) of heavy truck travel in SalemKeizer area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - HvyTrkAveSpeed
+            - SalemKeizer
+    BusAveSpeed_Metro:
+        kind: info
+        desc: Average speed (miles per hour) of bus travel in Metro area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - BusAveSpeed
+            - Metro
+    BusAveSpeed_SalemKeizer:
+        kind: info
+        desc: Average speed (miles per hour) of bus travel in SalemKeizer area in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - BusAveSpeed
+            - SalemKeizer
+    NonUrbanAveSpeed_Metro:
+        kind: info
+        desc: Average speed (miles per hour) of vehicle travel on non-urban area roads in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - NonUrbanAveSpeed
+            - Metro
+    NonUrbanAveSpeed_SalemKeizer:
+        kind: info
+        desc: Average speed (miles per hour) of vehicle travel on non-urban area roads in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - NonUrbanAveSpeed
+            - SalemKeizer
+    AutoFatalCrash_Metro:
+        kind: info
+        desc: Number of yearly auto fatal crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - AutoFatalCrash
+            - Metro
+    AutoFatalCrash_SalemKeizer:
+        kind: info
+        desc: Number of yearly auto fatal crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - AutoFatalCrash
+            - SalemKeizer
+    AutoInjuryCrash_Metro:
+        kind: info
+        desc: Number of yearly auto injury crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - AutoInjuryCrash
+            - Metro
+    AutoInjuryCrash_SalemKeizer:
+        kind: info
+        desc: Number of yearly auto injury crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - AutoInjuryCrash
+            - SalemKeizer
+    BikeFatalCrash_Metro:
+        kind: info
+        desc: Number of yearly bike fatal crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - BikeFatalCrash
+            - Metro
+    BikeFatalCrash_SalemKeizer:
+        kind: info
+        desc: Number of yearly bike fatal crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - BikeFatalCrash
+            - SalemKeizer
+    BikeInjuryCrash_Metro:
+        kind: info
+        desc: Number of yearly bike injury crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - BikeInjuryCrash
+            - Metro
+    BikeInjuryCrash_SalemKeizer:
+        kind: info
+        desc: Number of yearly bike injury crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - BikeInjuryCrash
+            - SalemKeizer
+    WalkFatalCrash_Metro:
+        kind: info
+        desc: Number of yearly walk fatal crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - WalkFatalCrash
+            - Metro
+    WalkFatalCrash_SalemKeizer:
+        kind: info
+        desc: Number of yearly walk fatal crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - WalkFatalCrash
+            - SalemKeizer
+    WalkInjuryCrash_Metro:
+        kind: info
+        desc: Number of yearly walk injury crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - WalkInjuryCrash
+            - Metro
+    WalkInjuryCrash_SalemKeizer:
+        kind: info
+        desc: Number of yearly walk injury crashes in 2050
+        transform: none
+        metamodeltype: log
+        parser:
+            file: metro_measures_2050.csv
+            loc:
+            - WalkInjuryCrash
+            - SalemKeizer
+    AutoFatalUrban:
+         kind: info
+         desc: Total number of auto fatal crashes in urban area in 2050
+         transform: none
+         metamodeltype: linear
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - AutoFatalUrban
+             - 2050
+    AutoInjuryUrban:
+         kind: info
+         desc: Total number of auto injury crashes in urban area in 2050
+         transform: none
+         metamodeltype: linear
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - AutoInjuryUrban
+             - 2050
+    AutoFatalRural:
+         kind: info
+         desc: Total number of auto fatal crashes in rural area in 2050
+         transform: none
+         metamodeltype: linear
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - AutoFatalRural
+             - 2050
+    AutoInjuryRural:
+         kind: info
+         desc: Total number of auto injury crashes in rural area in 2050
+         transform: none
+         metamodeltype: linear
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - AutoInjuryRural
+             - 2050
+    OwnCostProp:
+         kind: info
+         desc: Vehicle ownership cost as a proportion of household income
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - OwnCostProp
+             - 2050
+    OwnCostPropHhLess25K:
+         kind: info
+         desc: Vehicle ownerhsip cost as a proportion of household income for households earning between 25K to 50K in 2050
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - OwnCostPropHhLess25K
+             - 2050
+    OwnCostPropHh25Kto50K:
+         kind: info
+         desc: Vehicle ownerhsip cost as a proportion of household income for households earning less than 25K
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - OwnCostPropHh25Kto50K
+             - 2050
+    OwnCostPropHhOver50K:
+         kind: info
+         desc: Vehicle ownerhsip cost as a proportion of household income for households earning over 50K in 2050
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - OwnCostPropHhOver50K
+             - 2050
+    OwnCostPropUrban:
+         kind: info
+         desc: Vehicle ownerhsip cost as a proportion of household income for urban households
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - OwnCostPropUrban
+             - 2050
+    OwnCostPropTown:
+         kind: info
+         desc: Vehicle ownerhsip cost as a proportion of household income for town households
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - OwnCostPropTown
+             - 2050
+    OwnCostPropRural:
+         kind: info
+         desc: Vehicle ownerhsip cost as a proportion of household income for rural households
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - OwnCostPropRural
+             - 2050
+    VehCostProp:
+         kind: info
+         desc: Vehicle operating cost as a proportion of household income
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - VehCostProp
+             - 2050
+    VehCostPropHhLess25K:
+         kind: info
+         desc: Vehicle operating cost as a proportion of household income for households earning less than 25K
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - VehCostPropHhLess25K
+             - 2050
+    VehCostPropHhAge65Plus:
+         kind: info
+         desc: Vehicle operating cost as a proportion of household income for households with residents age 65 and older
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - VehCostPropHhAge65Plus
+             - 2050
+    RoadUseTax:
+         kind: info
+         desc: Total taxes collected from household fuel tax, VMT tax, and congestion fees
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - RoadUseTax
+             - 2050
+    TotalTaxRev:
+         kind: info
+         desc: Total annual tax revenue collected from fuel taxes, VMT taxes, and vehicle ownership taxes
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - TotalTaxRev
+             - 2050
+    TotalFuelTax:
+         kind: info
+         desc: Total Fuel tax
+         transform: none
+         metamodeltype: log
+         parser:
+             file: state_validation_measures.csv
+             loc:
+             - TotalFuelTax
+             - 2050
