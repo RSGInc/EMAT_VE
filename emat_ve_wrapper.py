@@ -335,7 +335,7 @@ class VEModel(FilesCoreModel):
 		_logger.info(f"{self.config['model_type']} SETUP complete")
 
 
-	def _manipulate_by_categorical_drop_in(self, params, cat_param, cat_mapping, ve_scenario_dir):
+	def _manipulate_by_categorical_drop_in(self, params, cat_param, ve_scenario_dir):
 		"""
 		Copy in the relevant input files.
 
@@ -344,7 +344,7 @@ class VEModel(FilesCoreModel):
 				The parameters for this experiment, including both
 				exogenous uncertainties and policy levers.
 		"""
-		scenario_dir = cat_mapping.get(params[cat_param])
+		scenario_dir = params[cat_param]
 		for i in os.scandir(scenario_input(ve_scenario_dir,scenario_dir)):
 			if i.is_file():
 				shutil.copyfile(
@@ -540,11 +540,6 @@ class VEModel(FilesCoreModel):
 				exogenous uncertainties and policy levers.
 		"""
 
-		cat_mapping = {
-			'AP': '1',
-			'PVOP': '2',
-			'MM': '3',
-		}
 		return self._manipulate_by_mixture(params, 'LUDENSITYMIX', self.scenario_input_dirs.get('LUDENSITYMIX'))
 
 	def _manipulate_intdensity(self, params):
@@ -568,13 +563,7 @@ class VEModel(FilesCoreModel):
 				exogenous uncertainties and policy levers.
 		"""
 
-		cat_mapping = {
-			'low': '1',
-			'mid': '2',
-			'high': '3',
-		}
-
-		return self._manipulate_by_categorical_drop_in(params, 'HHPOPGROWTHRATE', cat_mapping, self.scenario_input_dirs.get('HHPOPGROWTHRATE'))
+		return self._manipulate_by_categorical_drop_in(params, 'HHPOPGROWTHRATE', self.scenario_input_dirs.get('HHPOPGROWTHRATE'))
 
 	def _manipulate_income(self, params):
 		"""
@@ -622,12 +611,8 @@ class VEModel(FilesCoreModel):
 				The parameters for this experiment, including both
 				exogenous uncertainties and policy levers.
 		"""
-		cat_mapping = {
-			'low': '1',
-			'mid': '2',
-			'high': '3',
-		}
-		return self._manipulate_by_categorical_drop_in(params, 'CARSVCAVAILSCEN', cat_mapping, self.scenario_input_dirs.get('CARSVCAVAILSCEN'))
+
+		return self._manipulate_by_categorical_drop_in(params, 'CARSVCAVAILSCEN', self.scenario_input_dirs.get('CARSVCAVAILSCEN'))
 
 	def _manipulate_shdcarsvc(self, params):
 		"""
@@ -660,12 +645,8 @@ class VEModel(FilesCoreModel):
 				The parameters for this experiment, including both
 				exogenous uncertainties and policy levers.
 		"""
-		cat_mapping = {
-			'low': '1',
-			'mid': '2',
-			'high': '3',
-		}
-		return self._manipulate_by_categorical_drop_in(params, 'DRVLESSADJSCEN', cat_mapping, self.scenario_input_dirs.get('DRVLESSADJSCEN'))
+
+		return self._manipulate_by_categorical_drop_in(params, 'DRVLESSADJSCEN', self.scenario_input_dirs.get('DRVLESSADJSCEN'))
 
 	def _manipulate_drvless_param(self, params):
 		"""
@@ -700,13 +681,7 @@ class VEModel(FilesCoreModel):
 				exogenous uncertainties and policy levers.
 		"""
 
-		cat_mapping = {
-			'low': '1',
-			'mid': '2',
-			'high': '3',
-		}
-
-		return self._manipulate_by_categorical_drop_in(params, 'AVVEHSALESGROWTHSCEN', cat_mapping, self.scenario_input_dirs.get('AVVEHSALESGROWTHSCEN'))
+		return self._manipulate_by_categorical_drop_in(params, 'AVVEHSALESGROWTHSCEN', self.scenario_input_dirs.get('AVVEHSALESGROWTHSCEN'))
 
 	def _manipulate_carchargeavailscen(self, params):
 		"""
@@ -730,13 +705,7 @@ class VEModel(FilesCoreModel):
 				exogenous uncertainties and policy levers.
 		"""
 
-		cat_mapping = {
-			'low': '1',
-			'mid': '2',
-			'high': '3',
-		}
-
-		return self._manipulate_by_categorical_drop_in(params, 'CICHANGERATESCEN', cat_mapping, self.scenario_input_dirs.get('CICHANGERATESCEN'))
+		return self._manipulate_by_categorical_drop_in(params, 'CICHANGERATESCEN', self.scenario_input_dirs.get('CICHANGERATESCEN'))
 
 	def _manipulate_inv(self, params):
 		"""
@@ -748,14 +717,7 @@ class VEModel(FilesCoreModel):
 				exogenous uncertainties and policy levers.
 		"""
 
-		cat_mapping = {
-			'AP': '1',
-			'MM': '2',
-			'OP': '3',
-			'PV': '4',
-		}
-
-		return self._manipulate_by_categorical_drop_in(params, 'INVESTMENTSCEN', cat_mapping, self.scenario_input_dirs.get('INVESTMENTSCEN'))
+		return self._manipulate_by_categorical_drop_in(params, 'INVESTMENTSCEN', self.scenario_input_dirs.get('INVESTMENTSCEN'))
 
 	def _manipulate_sovdivert(self, params):
 		"""
@@ -778,11 +740,6 @@ class VEModel(FilesCoreModel):
 				The parameters for this experiment, including both
 				exogenous uncertainties and policy levers.
 		"""
-
-		cat_mapping = {
-			'AP': '1',
-			'NONAP': '2'
-		}
 
 		return self._manipulate_by_mixture(params, 'TAXSCEN', self.scenario_input_dirs.get('TAXSCEN'),  no_mix_cols=('Year', 'Geo', 'FuelTax.2005'))
 
@@ -855,12 +812,7 @@ class VEModel(FilesCoreModel):
 				exogenous uncertainties and policy levers.
 		"""
 
-		cat_mapping = {
-			'LOWEV': '1',
-			'MEDHH': '2'
-		}
-
-		scenario_dir = cat_mapping.get(params['POWERTRAINSCEN'])
+		scenario_dir = params['POWERTRAINSCEN']
 		ve_scenario_dir = self.scenario_input_dirs.get('POWERTRAINSCEN')
 		for i in os.scandir(scenario_input(ve_scenario_dir,scenario_dir)):
 			if i.is_file():
@@ -879,14 +831,7 @@ class VEModel(FilesCoreModel):
 				exogenous uncertainties and policy levers.
 		"""
 
-		cat_mapping = {
-			'none': '0',
-			'low': '1',
-			'mid': '2',
-			'high': '3',
-		}
-
-		return self._manipulate_by_categorical_drop_in(params, 'EXPANDROADS', cat_mapping, self.scenario_input_dirs.get('EXPANDROADS'))
+		return self._manipulate_by_categorical_drop_in(params, 'EXPANDROADS', self.scenario_input_dirs.get('EXPANDROADS'))
 
 	def _manipulate_transit(self, params):
 		"""
@@ -898,13 +843,7 @@ class VEModel(FilesCoreModel):
 				exogenous uncertainties and policy levers.
 		"""
 
-		cat_mapping = {
-			'low': '1',
-			'mid': '2',
-			'high': '3',
-		}
-
-		return self._manipulate_by_categorical_drop_in(params, 'TRANSIT', cat_mapping, self.scenario_input_dirs.get('TRANSIT'))
+		return self._manipulate_by_categorical_drop_in(params, 'TRANSIT', self.scenario_input_dirs.get('TRANSIT'))
 
 	def _manipulate_bikewalk(self, params):
 		"""
@@ -916,13 +855,7 @@ class VEModel(FilesCoreModel):
 				exogenous uncertainties and policy levers.
 		"""
 
-		cat_mapping = {
-			'low': '1',
-			'mid': '2',
-			'high': '3',
-		}
-
-		return self._manipulate_by_categorical_drop_in(params, 'BIKEWALK', cat_mapping, self.scenario_input_dirs.get('BIKEWALK'))
+		return self._manipulate_by_categorical_drop_in(params, 'BIKEWALK', self.scenario_input_dirs.get('BIKEWALK'))
 
 	def _manipulate_operations(self, params):
 		"""
@@ -934,13 +867,7 @@ class VEModel(FilesCoreModel):
 				exogenous uncertainties and policy levers.
 		"""
 
-		cat_mapping = {
-			'low': '1',
-			'mid': '2',
-			'high': '3',
-		}
-
-		return self._manipulate_by_categorical_drop_in(params, 'OPERATIONS', cat_mapping, self.scenario_input_dirs.get('OPERATIONS'))
+		return self._manipulate_by_categorical_drop_in(params, 'OPERATIONS', self.scenario_input_dirs.get('OPERATIONS'))
 
 
 	def run(self):
