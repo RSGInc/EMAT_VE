@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 import logging
 import tempfile
-# import re
+import re
 import shutil
-# import platform
+import platform
 import subprocess
-# import json
+import json
 from distutils.dir_util import copy_tree
 from distutils.file_util import copy_file
 
@@ -16,7 +16,7 @@ from emat import Scope, SQLiteDB
 from emat.model.core_files import FilesCoreModel
 from emat.model.core_files.parsers import TableParser, MappingParser, loc, key, iloc
 
-_logger = logging.getLogger("EMAT.VEModel")
+_logger = logging.getLogger("EMAT.VERSPM")
 
 # The demo model code is located in the same
 # directory as this script file.  We can recover
@@ -26,7 +26,7 @@ this_directory = os.path.dirname(__file__)
 
 def scenario_input(*filename):
 	"""The path to a scenario_input file."""
-	return os.path.join(this_directory, 'Scenario-Inputs', *filename)
+	return os.path.join(this_directory, 'scenario_inputs', *filename)
 
 def join_norm(*args):
 	"""Normalize joined paths."""
@@ -37,7 +37,7 @@ def r_join_norm(*args):
 	return os.path.normpath(os.path.join(*args)).replace('\\','/')
 
 
-class VEModel(FilesCoreModel):
+class VERSPMModel(FilesCoreModel):
 	"""
 	A class for using the Vision Eval RSPM as a files core model.
 
@@ -69,21 +69,21 @@ class VEModel(FilesCoreModel):
 
 		# Housekeeping for this example:
 		# Also copy the CONFIG and SCOPE files
-		for i in ['ve-model-config']:
+		for i in ['model-config']:
 			shutil.copy2(
-				join_norm(this_directory, 'EMAT-VE-Configs', f"{i}.yml"),
-				join_norm(cwd, f"{i}.yml"),
+				join_norm(this_directory, 'EMAT-VE-Configs', f"verspm-{i}.yml"),
+				join_norm(cwd, f"verspm-{i}.yml"),
 			)
 
 		if scope is None:
-			scope = Scope(join_norm(this_directory, 'EMAT-VE-Configs', "ve-model-scope.yml"))
+			scope = Scope(join_norm(this_directory, 'EMAT-VE-Configs', "verspm-scope.yml"))
 			for i in ['scope']:
 				shutil.copy2(
-					join_norm(this_directory, 'EMAT-VE-Configs', f"ve-model-{i}.yml"),
-					join_norm(cwd, f"ve-model-{i}.yml"),
+					join_norm(this_directory, 'EMAT-VE-Configs', f"verspm-{i}.yml"),
+					join_norm(cwd, f"verspm-{i}.yml"),
 				)
 		else:
-			scope.dump(filename=join_norm(cwd, f"ve-model-scope.yml"))
+			scope.dump(filename=join_norm(cwd, f"verspm-scope.yml"))
 
 		# Initialize a new daatabase if none was given.
 		if db is None:
@@ -103,19 +103,33 @@ class VEModel(FilesCoreModel):
 
 		# Initialize the super class (FilesCoreModel)
 		super().__init__(
-			configuration=join_norm(cwd, "ve-model-config.yml"),
+			configuration=join_norm(cwd, "verspm-model-config.yml"),
 			scope=scope,
 			db=db,
-			name='VEModel',
+			name='VERSPM',
 			local_directory = cwd,
 		)
 		if isinstance(db, SQLiteDB):
 			self._sqlitedb_path = db.database_path
 
-		# Create parameter address to indicate directory in which the scenario files are stored
+		# Populate the model_path directory of the files-based model. Other option is to use
+		# VE 3 installModel function to install specific models
+		# Setup function requires that the model is already present (installed). Need to figure
+		# out at which point in the code we can call the installModel function as it requires
+		# access to built environment and R.
+		# copy_tree(
+		# 	join_norm(this_directory, 'VERSPM'),
+		# 	join_norm(cwd, self.model_path),
+		# )
 
-		# Create a scenario input directory dictionary
-		self.scenario_input_dirs = {parameter.name:parameter.address for parameter in self.scope.get_parameters()} 
+		# The code doesn't run. The intention is to have installModel install a model here.
+		# Another question is to figure out whether this should be called here during initialization or
+		# during setup?
+		# subprocess.run(
+		# 	['Rscript', '-e', 'installModel("VERSPM", "metro-wfhsts")'],
+		# 	cwd=cwd,
+		# 	capture_output=True,
+		# )
 
 		# Ensuring R Exe path is in env.
 		os.environ['path'] = join_norm(self.config['r_executable'])+';'+os.environ['path']
@@ -125,22 +139,32 @@ class VEModel(FilesCoreModel):
 		r_runtime_path = self.config['r_runtime_path']
 
 		with open(join_norm(self.local_directory, '.Rprofile'), 'wt') as rprof:
+		 	#rprof.write(f'.libPaths("{r_lib}")\n')
 			rprof.write(f'source(file.path("{r_runtime_path}", "VisionEval.R"), chdir=TRUE)')
+		
+		
+		# if platform.system() == 'Windows':
+		# 	cmd = 'Rscript.exe'
+		# else:
+		# 	cmd = 'Rscript'
 
 		cmd = 'Rscript'
 		
-		self.modelname = self.config['model_type'] + '-' + self.config['model_variant']
+		# FIXME: Is not working - not getting the 
+		# subprocess.run(
+		# 	[cmd, arg, path2script],
+		# 	cwd=self.local_directory,
+		# 	capture_output=True)
+		self.modelname = 'VERSPM-' + self.config['model_variant']
 		modelpath = r_join_norm(self.local_directory, self.modelname)
+		# self.model_path = join_norm(self.local_directory, self.modelname)
 		self.model_path = modelpath
-		
-		# Add the model year and base year
-		self.model_base_year = int(self.config['base_year'])
-		self.model_future_year = int(self.config['model_year'])
 
 		with open(join_norm(self.local_directory, 'veinstaller.R'), 'wt') as veinstaller:
+		 	#rprof.write(f'.libPaths("{r_lib}")\n')
 			veinstaller.write(f"""
 			# This model should load the base year results
-			ematmodel <- installModel('{self.config['model_type']}', variant='{self.config['model_variant']}', '{modelpath}', confirm=FALSE)
+			ematmodel <- installModel('VERSPM', variant='{self.config['model_variant']}', '{modelpath}', confirm=FALSE)
 
 			# Get the config path from the model
 			model_dir <- ematmodel$setting("ModelDir")
@@ -148,8 +172,8 @@ class VEModel(FilesCoreModel):
 
 			# Update the config to load the base year model
 			runConfig_ls <-  list(
-			Model       = "{self.config['model_type']} 3.0 MultiModal, STS Powertrain and Telework",
-			Scenario    = "{self.config['model_type']} {self.config["model_year"]} METRO MultiModal, STS Powertrain, with telework",
+			Model       = "VERSPM 3.0 MultiModal, STS Powertrain and Telework",
+			Scenario    = "VERSPM METRO MultiModal, STS Powertrain, with telework",
 			Description = "STS inputs",
 			Region      = "METRO",
 			State       = "OR",
@@ -170,11 +194,36 @@ class VEModel(FilesCoreModel):
 		
 
 		results = subprocess.run(
+		 	# [cmd, '-e', arg],
 			 [cmd, 'veinstaller.R'],
 		 	cwd=self.local_directory,
 		 	capture_output=False)
 		
 		print(results)
+
+		# Copy the models.
+		# copy_tree(
+		# 	join_norm(self.config['model_source']),
+		# 	join_norm(cwd, self.model_path),
+		# )
+
+
+
+		# Add parsers to instruct the load_measures function
+		# how to parse the outputs and get the measure values.
+
+		# instructions = {}
+
+		# for measure in scope.get_measures():
+		# 		if measure.parser and measure.parser.get('file') == 'total_Dvmt_per_capita.csv':
+		# 			instructions[measure.name] : iloc[self.config["model_year"],0]
+		# self.add_parser(
+		# 	TableParser(
+		# 		"total_Dvmt_per_capita.csv",
+		# 		instructions,
+		# 		index_col="year",
+		# 	)
+		# )
 
 		def read_csv_index_character(filename, index_colname, **kwargs,):
 			df = pd.read_csv(filename, **kwargs)
@@ -185,6 +234,8 @@ class VEModel(FilesCoreModel):
 		for measure in scope.get_measures():
 			instructions = {}			
 			if measure.parser:
+				#if measure.parser.get('loc'):
+				#	instructions[measure.name] = iloc[self.config["model_year"],measure.parser.get('loc')[0]]
 				if measure.parser.get('loc'):
 					instructions[measure.name] = loc[(str(j) for j in measure.parser.get('loc'))]
 			self.add_parser(
@@ -192,7 +243,7 @@ class VEModel(FilesCoreModel):
 					measure.parser.get('file'),
 					instructions,
 					reader_method=read_csv_index_character,
-					index_colname='Measure',
+					index_colname='year',
 				)
 			)
 		
@@ -204,7 +255,7 @@ class VEModel(FilesCoreModel):
 
 		This method is the place where the core model set up takes place,
 		including creating or modifying files as necessary to prepare
-		for a VE core model run.  When running experiments, this method
+		for a RSPM core model run.  When running experiments, this method
 		is called once for each core model experiment, where each experiment
 		is defined by a set of particular values for both the exogenous
 		uncertainties and the policy levers.  These values are passed to
@@ -227,7 +278,7 @@ class VEModel(FilesCoreModel):
 				if a defined experiment variable is not supported
 				by the core model
 		"""
-		_logger.info(f"{self.config['model_type']} SETUP...")
+		_logger.info("VERSPM SETUP...")
 
 		for p in self.scope.get_parameters():
 			if p.name not in params:
@@ -289,53 +340,54 @@ class VEModel(FilesCoreModel):
 		# into discrete sub-methods, as each step is loosely independent
 		# and having separate methods makes this clearer.
 		tmip_vars = [var_name.upper() for var_name in params.keys()]
-		if 'LUDENSITYMIX' in tmip_vars:
-			self._manipulate_ludensity(params)
-		if 'INTDENSITYSCEN' in tmip_vars:
-			self._manipulate_intdensity(params)
-		if 'HHPOPGROWTHRATE' in tmip_vars:
-			self._manipulate_population(params)
-		if 'INCOMEGROWTH' in tmip_vars:
-			self._manipulate_income(params)
-		if 'LDVECODRVSCEN' in tmip_vars:
-			self._manipulate_ldvecodrv(params)
-		if 'CARSVCAVAILSCEN' in tmip_vars:
-			self._manipulate_carsvcavail(params)
-		if 'SHDCARSVCOCCUPRATE' in tmip_vars:
-			self._manipulate_shdcarsvc(params)
-		if 'DRVLESSADJSCEN' in tmip_vars:
-			self._manipulate_drvlessadj(params)
-		if 'DRVLESSPROPREMOTEACC' in tmip_vars and 'PROPPARKINGFEEAVOID' in tmip_vars:
-			self._manipulate_drvless_param(params)
-		if 'AVVEHSALESGROWTHSCEN' in tmip_vars:
-			self._manipulate_drvlessvehsales(params)
-		if 'CARCHARGEAVAILSCEN' in tmip_vars:
-			self._manipulate_carchargeavailscen(params)
-		if 'CICHANGERATESCEN' in tmip_vars:
-			self._manipulate_cichange(params)
-		if 'INVESTMENTSCEN' in tmip_vars:
-			self._manipulate_inv(params)
-		if 'SOVDIVIVERTSCEN' in tmip_vars:
-			self._manipulate_sovdivert(params)
-		if 'TAXSCEN' in tmip_vars:
-			self._manipulate_taxes(params)
-		if 'LANEMILESCEN' in tmip_vars:
-			self._manipulate_mlanemiles(params)
-		if 'OPSDEPLOYSCEN' in tmip_vars:
-			self._manipulate_opsdeployment(params)
-		if 'TRANSITSERVICESCEN' in tmip_vars:
-			self._manipulate_transitservice(params)
-		if 'TDMINVESTMENTSCEN' in tmip_vars:
-			self._manipulate_tdmareatype(params)
-		if 'TRANSITSCEN' in tmip_vars:
-			self._manipulate_transitscen(params)
-		if 'POWERTRAINSCEN' in tmip_vars:
-			self._manipulate_powertrainscen(params)
+		if 'PAYDHHPROP' in tmip_vars:
+			self._manipulate_payd(params)
+		if 'PROPEXTERNALITIESPAID' in tmip_vars:
+			self._manipulate_region_prop_externalities_climate(params)
+		if 'LANEMILEMULTIPLIER' in tmip_vars:
+			self._manipulate_lane_mile(params)
+		#if 'CONGESTIONCHARGES' in tmip_vars:
+		#	self._manipulate_marea_congestion_charges(params)
+		#if 'FWYCONGESTIONCHARGES' in tmip_vars:
+		#	self._manipulate_fwy_congestion_charges(params)
+		#if 'ARTCONGESTIONCHARGES' in tmip_vars:
+		#	self._manipulate_art_congestion_charges(params)
+		if 'FWYCONGESTIONCHARGES' in tmip_vars and 'ARTCONGESTIONCHARGES' in tmip_vars:
+			self._manipulate_congestion_charges(params)
+		if 'VEHUSETAX' in tmip_vars:
+			self._manipulate_road_use_cost(params)
+		if 'TRANSITPOWERTRAIN' in tmip_vars:
+			self._manipulate_marea_transit_powertrain_prop(params)
+		if 'TRANSITSERVICE' in tmip_vars:
+			self._manipulate_marea_transit_service(params)
+		if 'TELEWORK' in tmip_vars:
+			self._manipulate_telework(params)
+		if 'PARKING' in tmip_vars:
+			self._manipulate_parking(params)
 
-		_logger.info(f"{self.config['model_type']} SETUP complete")
+		_logger.info("VERSPM SETUP complete")
 
+	# def _manipulate_model_parameters_json(self, params):
+	# 	"""
+	# 	Prepare the model_parameters input file based on the existing file.
 
-	def _manipulate_by_categorical_drop_in(self, params, cat_param, ve_scenario_dir):
+	# 	Args:
+	# 		params (dict):
+	# 			The parameters for this experiment, including both
+	# 			exogenous uncertainties and policy levers.
+	# 	"""
+
+	# 	# load the text of the first demo input file
+	# 	with open(join_norm(self.local_directory, self.model_path, 'defs', 'model_parameters.json'), 'rt') as f:
+	# 		y = json.load(f)
+
+	# 	y[0]['VALUE'] = str(params['ValueOfTime'])
+
+	# 	# write the manipulated text back out to the first demo input file
+	# 	with open(join_norm(self.local_directory, self.model_path, 'defs', 'model_parameters.json'), 'wt') as f:
+	# 		json.dump(y, f)
+
+	def _manipulate_by_categorical_drop_in(self, params, cat_param, cat_mapping, ve_scenario_dir):
 		"""
 		Copy in the relevant input files.
 
@@ -344,7 +396,7 @@ class VEModel(FilesCoreModel):
 				The parameters for this experiment, including both
 				exogenous uncertainties and policy levers.
 		"""
-		scenario_dir = params[cat_param]
+		scenario_dir = cat_mapping.get(params[cat_param])
 		for i in os.scandir(scenario_input(ve_scenario_dir,scenario_dir)):
 			if i.is_file():
 				shutil.copyfile(
@@ -466,7 +518,72 @@ class VEModel(FilesCoreModel):
 				df1.replace(0, np.nan, inplace=True)
 			df1.to_csv(out_filename, index=False, float_format="%.5f", na_rep='NA')
 
-	def _manipulate_by_delta(self, params, weight_param, ve_scenario_dir, no_mix_cols=('Year', 'Geo',)):
+	# def _manipulate_marea_congestion_charges(self, params):
+	# 	"""
+	# 	Prepare the marea_congestion_charges input file based on a template file.
+
+	# 	Args:
+	# 		params (dict):
+	# 			The parameters for this experiment, including both
+	# 			exogenous uncertainties and policy levers.
+	# 	"""
+	# 	cat_mapping = {
+	# 		'base': '1',
+	# 		'sts': '2',
+	# 		'freeway': '3',
+	# 		'arterial': '4',
+	# 	}
+	# 	return self._manipulate_by_categorical_drop_in(params, 'CONGESTIONCHARGES', cat_mapping, 'ConP')
+
+	# def _manipulate_fwy_congestion_charges(self, params, ):
+	# 	return self._manipulate_by_mixture(
+	# 		params, 
+	# 		'FWYCONGESTIONCHARGES', 
+	# 		'FConP', 
+	# 		no_mix_cols = (
+	# 			"Year", "Geo", 
+	# 			"FwyNoneCongChg.2005", 
+	# 			"FwyModCongChg.2005", 
+	# 			"FwyHvyCongChg.2005", 
+	# 			"FwySevCongChg.2005", 
+	# 			"FwyExtCongChg.2005",
+	# 		),
+	# 		float_dtypes=True
+	# 	)
+	
+	# def _manipulate_art_congestion_charges(self, params, ):
+	# 	return self._manipulate_by_mixture(
+	# 		params, 
+	# 		'ARTCONGESTIONCHARGES', 
+	# 		'AConP', 
+	# 		no_mix_cols = (
+	# 			"Year", "Geo", 
+	# 			"ArtNoneCongChg.2005", 
+	# 			"ArtModCongChg.2005", 
+	# 			"ArtHvyCongChg.2005", 
+	# 			"ArtSevCongChg.2005", 
+	# 			"ArtExtCongChg.2005",
+	# 		),
+	# 		float_dtypes=True
+	# 	)
+
+	def _manipulate_congestion_charges(self, params):
+		"""
+		Prepare the marea congestion input csv
+
+		Args:
+			params (dict):
+				The parameters for this experiment, including both
+				exogenous uncertainties and policy levers.
+		"""
+		param_map = {
+			"fwy": "FWYCONGESTIONCHARGES", 
+			"art": "ARTCONGESTIONCHARGES",
+		}
+
+		return self._manipulate_by_mixture_congestion(params, param_map, 'ConP', float_dtypes=True)	
+
+	def _manipulate_by_mixture_congestion(self, params, weight_param, ve_scenario_dir, no_mix_cols=('Year', 'Geo',), float_dtypes=False):
 		"""
 		Prepare files by interpolating parameters between two files.
 
@@ -484,9 +601,11 @@ class VEModel(FilesCoreModel):
 				Columns that should not be interpolated
 		"""
 
-		# weight_2 = params[weight_param]
-		# weight_1 = 1.0-weight_2
-		weight_ = params[weight_param]
+		weight_2 = params[weight_param["fwy"]]
+		weight_1 = 1.0-weight_2
+
+		weight_4 = params[weight_param["art"]]
+		weight_3 = 1.0-weight_4
 
 		# Gather list of all files in directory "1", and confirm they
 		# are also in directory "2"
@@ -500,374 +619,103 @@ class VEModel(FilesCoreModel):
 
 		for filename in filenames:
 			df1 = pd.read_csv(scenario_input(ve_scenario_dir,'1',filename))
+			isna_ = (df1.isnull().values).any()
+			df1.fillna(0, inplace=True)
 			df2 = pd.read_csv(scenario_input(ve_scenario_dir,'2',filename))
+			df2.fillna(0, inplace=True)
 
 			float_mix_cols = list(df1.select_dtypes('float').columns)
+			if float_dtypes:
+				float_mix_cols = float_mix_cols+list(df1.select_dtypes('int').columns)
 			for j in no_mix_cols:
 				if j in float_mix_cols:
 					float_mix_cols.remove(j)
+			
+			if float_mix_cols:
+				float_mix_cols_fwy = [e for e in float_mix_cols if "Fwy" in e]
+				float_mix_cols_art = [e for e in float_mix_cols if "Art" in e]
 
 			if float_mix_cols:
-				df1_float = df1[float_mix_cols]
-				df2_float = df2[float_mix_cols]
-				delta_float = df2_float - df1_float
-				df1[float_mix_cols] = df1_float + (delta_float * weight_)
+				df1[float_mix_cols_fwy] = df1[float_mix_cols_fwy] * weight_1 + df2[float_mix_cols_fwy] * weight_2
+				df1[float_mix_cols_art] = df1[float_mix_cols_art] * weight_3 + df2[float_mix_cols_art] * weight_4
 
 			int_mix_cols = list(df1.select_dtypes('int').columns)
+			if float_dtypes:
+				int_mix_cols = list()
 			for j in no_mix_cols:
 				if j in int_mix_cols:
 					int_mix_cols.remove(j)
 
 			if int_mix_cols:
-				df1_int = df1[int_mix_cols]
-				df2_int = df2[int_mix_cols]
-				delta_int = df2_int - df1_int
-				df_int_mix = df1_int + (delta_int * weight_)
-				df1[int_mix_cols] = np.round(df_int_mix).astype(int)
+				int_mix_cols_fwy = [e for e in int_mix_cols if "Fwy" in e]
+				int_mix_cols_art = [e for e in int_mix_cols if "Art" in e]
+
+			if int_mix_cols:
+				df_int_mix_fwy = df1[int_mix_cols_fwy] * weight_1 + df2[int_mix_cols_fwy] * weight_2
+				df_int_mix_art = df1[int_mix_cols_art] * weight_3 + df2[int_mix_cols_art] * weight_4
+				df1[int_mix_cols_fwy] = np.round(df_int_mix_fwy).astype(int)
+				df1[int_mix_cols_art] = np.round(df_int_mix_art).astype(int)
 
 			out_filename = join_norm(
 				self.resolved_model_path, 'inputs', filename
 			)
-			df1.to_csv(out_filename, index=False, float_format="%.5f")
+			if isna_:
+				df1.replace(0, np.nan, inplace=True)
+			df1.to_csv(out_filename, index=False, float_format="%.5f", na_rep='NA')
 
-	def _manipulate_ludensity(self, params):
+
+	def _manipulate_payd(self, params, ):
+		return self._manipulate_by_mixture(params, 'PAYDHHPROP', 'PI', float_dtypes=True)
+	
+	def _manipulate_region_prop_externalities_climate(self, params, ):
+		return self._manipulate_by_mixture(params, 'PROPEXTERNALITIESPAID', 'ClmP',float_dtypes=True)
+
+	def _manipulate_lane_mile(self, params, ):
+		param_mapping={'LANEMILEMULTIPLIER':['FwyLaneMi', 'ArtLaneMi']}
+		return self._manipulate_by_scale(params, param_mapping, 'LM',)	
+		# Lane Miles -  a scaler?  (one scaler with a low and a high)
+
+	def _manipulate_road_use_cost(self, params, ):
+		return self._manipulate_by_mixture(params, 'VEHUSETAX', 'RUC',float_dtypes=True) 
+
+	def _manipulate_marea_transit_powertrain_prop(self, params, ):
+		return self._manipulate_by_mixture(params, 'TRANSITPOWERTRAIN', 'TP',float_dtypes=True) 
+
+	def _manipulate_marea_transit_service(self, params, ):
+	 	return self._manipulate_by_mixture(params, 'TRANSITSERVICE', 'TS',float_dtypes=True) 
+
+	# def _manipulate_marea_transit_service(self, params):
+		# """
+		# Prepare the marea_congestion_charges input file based on a template file.
+
+		# Args:
+			# params (dict):
+				# The parameters for this experiment, including both
+				# exogenous uncertainties and policy levers.
+		# """
+		# cat_mapping = {
+			# 'RTP18': '1',
+			# 'RTP23+': '2',
+		# }
+		# return self._manipulate_by_categorical_drop_in(params, 'TRANSITSERVICE', cat_mapping, 'TS')
+
+	def _manipulate_telework(self, params, ):
+		return self._manipulate_by_mixture(params, 'TELEWORK', 'WFH',float_dtypes=True) 
+
+	def _manipulate_parking(self, params):
 		"""
-		Prepare the urban mix proportion by marea
-        Type: Categorical
+		Prepare the marea_congestion_charges input file based on a template file.
+
 		Args:
 			params (dict):
 				The parameters for this experiment, including both
 				exogenous uncertainties and policy levers.
 		"""
-
-		return self._manipulate_by_mixture(params, 'LUDENSITYMIX', self.scenario_input_dirs.get('LUDENSITYMIX'))
-
-	def _manipulate_intdensity(self, params):
-		"""
-		Prepare the D3BPO4 adjustment factor by marea
-        Type: Mixture
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-		return self._manipulate_by_mixture(params, 'INTDENSITYSCEN', self.scenario_input_dirs.get('INTDENSITYSCEN'))
-
-	def _manipulate_population(self, params):
-		"""
-		Prepare the population files
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_categorical_drop_in(params, 'HHPOPGROWTHRATE', self.scenario_input_dirs.get('HHPOPGROWTHRATE'))
-
-	def _manipulate_income(self, params):
-		"""
-		Prepare the income input file based on a template file.
-        Type: Manipulation
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		income_df = pd.read_csv(join_norm(scenario_input(self.scenario_input_dirs.get('INCOMEGROWTHRATE'),'azone_per_cap_inc.csv')))
-
-		unique_years = income_df.Year.unique()
-		base_year = self.model_base_year
-
-		for run_year in unique_years:
-			year_diff = run_year - base_year
-			income_df.loc[income_df.Year == run_year,['HHIncomePC.2005', 'GQIncomePC.2005']] = \
-			income_df.loc[income_df.Year == run_year,['HHIncomePC.2005', 'GQIncomePC.2005']] * (params['INCOMEGROWTHRATE'] ** year_diff)
-		
-		out_filename = join_norm(
-			self.resolved_model_path, 'inputs', 'azone_per_cap_inc.csv'
-		)
-		_logger.debug(f"writing updates to: {out_filename}")
-		income_df.to_csv(out_filename, index=False)
-		
-	def _manipulate_ldvecodrv(self, params):
-		"""
-		Prepate the LDV ecodrive penetration file.
-        Type: Mixture
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-		return self._manipulate_by_mixture(params, 'LDVECODRVSCEN', self.scenario_input_dirs.get('LDVECODRVSCEN'))
-
-	def _manipulate_carsvcavail(self, params):
-		"""
-		Prepate the car service availability file.
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_categorical_drop_in(params, 'CARSVCAVAILSCEN', self.scenario_input_dirs.get('CARSVCAVAILSCEN'))
-
-	def _manipulate_shdcarsvc(self, params):
-		"""
-		Prepare the shared car service occupancy rate file.
-        Type: Manipulation
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		shdcarsvc_occp_df = pd.read_csv(join_norm(scenario_input(self.scenario_input_dirs.get('SHDCARSVCOCCUPRATE'),'region_carsvc_shd_occup.csv')))
-
-		future_year = self.model_future_year
-
-		shdcarsvc_occp_df.loc[shdcarsvc_occp_df.Year == future_year, 'ShdCarSvcAveOccup'] = params['SHDCARSVCOCCUPRATE']
-		
-		out_filename = join_norm(
-			self.resolved_model_path, 'inputs', 'region_carsvc_shd_occup.csv'
-		)
-		_logger.debug(f"writing updates to: {out_filename}")
-		shdcarsvc_occp_df.to_csv(out_filename, index=False)
-
-	def _manipulate_drvlessadj(self, params):
-		"""
-		Prepare the delay and smoothing adjustment factor file
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_categorical_drop_in(params, 'DRVLESSADJSCEN', self.scenario_input_dirs.get('DRVLESSADJSCEN'))
-
-	def _manipulate_drvless_param(self, params):
-		"""
-		Prepare the driverless vehicle parameters file.
-        Type: Manipulation
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		drvless_veh_param_df = pd.read_csv(join_norm(scenario_input(self.scenario_input_dirs.get('DRVLESSPROPREMOTEACC'),'region_driverless_vehicle_parameter.csv')))
-
-		future_year = self.model_future_year
-
-		drvless_veh_param_df.loc[drvless_veh_param_df.Year == future_year, 'PropRemoteAccess'] = params['DRVLESSPROPREMOTEACC']
-		drvless_veh_param_df.loc[drvless_veh_param_df.Year == future_year, 'PropParkingFeeAvoid'] = params['PROPPARKINGFEEAVOID']
-		
-		out_filename = join_norm(
-			self.resolved_model_path, 'inputs', 'region_driverless_vehicle_parameter.csv'
-		)
-		_logger.debug(f"writing updates to: {out_filename}")
-		drvless_veh_param_df.to_csv(out_filename, index=False)
-
-	def _manipulate_drvlessvehsales(self, params):
-		"""
-		Prepare the driverless vehicles sales file
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_categorical_drop_in(params, 'AVVEHSALESGROWTHSCEN', self.scenario_input_dirs.get('AVVEHSALESGROWTHSCEN'))
-
-	def _manipulate_carchargeavailscen(self, params):
-		"""
-		Prepare the azone_charging_availability.csv
-        Type: Mixture
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_mixture(params, 'CARCHARGEAVAILSCEN', self.scenario_input_dirs.get('CARCHARGEAVAILSCEN'))
-
-	def _manipulate_cichange(self, params):
-		"""
-		Prepare the carbon emissions related files
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_categorical_drop_in(params, 'CICHANGERATESCEN', self.scenario_input_dirs.get('CICHANGERATESCEN'))
-
-	def _manipulate_inv(self, params):
-		"""
-		Prepare the investment related files
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_categorical_drop_in(params, 'INVESTMENTSCEN', self.scenario_input_dirs.get('INVESTMENTSCEN'))
-
-	def _manipulate_sovdivert(self, params):
-		"""
-		Prepare the azone_prop_sov_dvmt_diverted.csv
-        Type: Mixture
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_mixture(params, 'SOVDIVIVERTSCEN', self.scenario_input_dirs.get('SOVDIVIVERTSCEN'))
-
-	def _manipulate_taxes(self, params):
-		"""
-		Prepare the azone_veh_use_taxes.csv file.
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_mixture(params, 'TAXSCEN', self.scenario_input_dirs.get('TAXSCEN'),  no_mix_cols=('Year', 'Geo', 'FuelTax.2005'))
-
-	def _manipulate_mlanemiles(self, params):
-		"""
-		Prepare the marea_lane_miles.csv file
-        Type: Manipulation
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_delta(params, 'LANEMILESCEN', self.scenario_input_dirs.get('LANEMILESCEN'))
-
-	def _manipulate_opsdeployment(self, params):
-		"""
-		Prepare the marea_operations_deployment.csv file
-        Type: Mixture
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_mixture(params, 'OPSDEPLOYSCEN', self.scenario_input_dirs.get('OPSDEPLOYSCEN'))
-
-	def _manipulate_transitservice(self, params):
-		"""
-		Prepare the marea_transit_service.csv file
-        Type: Mixture
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_mixture(params, 'TRANSITSERVICESCEN', self.scenario_input_dirs.get('TRANSITSERVICESCEN'))
-
-	def _manipulate_tdmareatype(self, params):
-		"""
-		Prepare the marea_travel-demand-mgt_by_area-type.csv
-        Type: Mixture
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-		return self._manipulate_by_mixture(params, 'TDMINVESTMENTSCEN', self.scenario_input_dirs.get('TDMINVESTMENTSCEN'))
-
-	def _manipulate_transitscen(self, params):
-		"""
-		Prepare the transit mix scenario
-        Type: Mixture
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_mixture(params, 'TRANSITSCEN', self.scenario_input_dirs.get('TRANSITSCEN'), float_dtypes=True)
-
-	def _manipulate_powertrainscen(self, params):
-		"""
-		Prepare the run model script so that approprate PowertrainAndFuelsPackage is used
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		scenario_dir = params['POWERTRAINSCEN']
-		ve_scenario_dir = self.scenario_input_dirs.get('POWERTRAINSCEN')
-		for i in os.scandir(scenario_input(ve_scenario_dir,scenario_dir)):
-			if i.is_file():
-				shutil.copyfile(
-					scenario_input(ve_scenario_dir,scenario_dir,i.name),
-					join_norm(self.resolved_model_path, 'scripts', i.name)
-				)
-
-	def _manipulate_expand_roads(self, params):
-		"""
-		Prepare the expand road investment files
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_categorical_drop_in(params, 'EXPANDROADS', self.scenario_input_dirs.get('EXPANDROADS'))
-
-	def _manipulate_transit(self, params):
-		"""
-		Prepare the transit investment files
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_categorical_drop_in(params, 'TRANSIT', self.scenario_input_dirs.get('TRANSIT'))
-
-	def _manipulate_bikewalk(self, params):
-		"""
-		Prepare the bike and walk files
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_categorical_drop_in(params, 'BIKEWALK', self.scenario_input_dirs.get('BIKEWALK'))
-
-	def _manipulate_operations(self, params):
-		"""
-		Prepare the operations files
-        Type: Categorical
-		Args:
-			params (dict):
-				The parameters for this experiment, including both
-				exogenous uncertainties and policy levers.
-		"""
-
-		return self._manipulate_by_categorical_drop_in(params, 'OPERATIONS', self.scenario_input_dirs.get('OPERATIONS'))
+		cat_mapping = {
+			'RTP18': '1',
+			'RTP23': '2',
+		}
+		return self._manipulate_by_categorical_drop_in(params, 'PARKING', cat_mapping, 'P')
 
 
 	def run(self):
@@ -888,14 +736,14 @@ class VEModel(FilesCoreModel):
 		Raises:
 		    UserWarning: If model is not properly setup
 		"""
-		_logger.info(f"{self.config['model_type']} RUN ...")
+		_logger.info("VERSPM RUN ...")
 
 		os.environ['path'] = join_norm(self.config['r_executable'])+';'+os.environ['path']
 		
 		cmd = 'Rscript'
 
 		# Script that opens the model and runs it
-		with open(join_norm(self.local_directory, "vemodel_runner.R"), "wt") as r_script:
+		with open(join_norm(self.local_directory, "verspm_runner.R"), "wt") as r_script:
 			r_script.write(f"""
 			thismodel <- openModel("{r_join_norm(self.local_directory, self.modelname)}")
 			thismodel$run("reset")
@@ -909,7 +757,7 @@ class VEModel(FilesCoreModel):
 		# will capture both stdout and stderr from the command line tool, and
 		# make these available in the result to facilitate debugging.
 		self.last_run_result = subprocess.run(
-			[cmd, 'vemodel_runner.R'],
+			[cmd, 'verspm_runner.R'],
 			cwd=self.local_directory,
 			capture_output=True,
 		)
@@ -922,10 +770,32 @@ class VEModel(FilesCoreModel):
 				self.last_run_result.stderr,
 			)
 		else:
+			#with open(join_norm(self.local_directory, self.model_path, 'output', 'stdout.log'), 'wb') as slog:
 			with open(join_norm(self.local_directory, self.modelname, 'results', 'stdout.log'), 'wb') as slog:
 				slog.write(self.last_run_result.stdout)
 
-		_logger.info(f"{self.config['model_type']} RUN complete")
+		# VisionEval Version 2 appends timestamps to output filenames,
+		# but because we're running in a temporary directory, we can
+		# strip them down to standard filenames.
+		# import re, glob
+		# renamer = re.compile(r"(.*)_202[0-9]-[0-9]+-[0-9]+_[0-9]+(\.csv)")
+		# _logger.debug("VERSPM RUN renaming files")
+		# for outfile in glob.glob(join_norm(self.local_directory, self.model_path, 'output', '*.csv')):
+		# 	_logger.debug(f"VERSPM RUN renaming: {outfile}")
+		# 	if renamer.match(outfile):
+		# 		newname = renamer.sub(r"\1\2", outfile)
+		# 		_logger.debug(f"     to: {newname}")
+		# 		os.rename(outfile, newname)
+
+		_logger.info("VERSPM RUN complete")
+
+
+	def bypassrun(self):
+		shutil.copytree(
+			join_norm("E:/Projects/Clients/Metro/VE/Metro_VERSPM_3.0_EMAT/results"),
+			join_norm(self.local_directory, self.modelname, "results"),
+		)
+
 
 
 	def last_run_logs(self, output=None):
@@ -1002,11 +872,16 @@ class VEModel(FilesCoreModel):
 				If post process is not available for specified measure
 		"""
 	
-		extraction_script = self.config['extract_script']
-		if not os.path.exists(join_norm(self.local_directory, self.modelname, extraction_script)):
+		if not os.path.exists(join_norm(self.local_directory, self.modelname, "extract_outputs.R")):
 			shutil.copy2(
-					join_norm(this_directory, extraction_script),
-					join_norm(self.local_directory, self.modelname, extraction_script),
+					join_norm(this_directory, "extract_outputs.R"),
+					join_norm(self.local_directory, self.modelname, "extract_outputs.R"),
+				)
+
+		if not os.path.exists(join_norm(self.local_directory, "Comparison files")):
+			shutil.copytree(
+					join_norm(this_directory, "Comparison files"),
+					join_norm(self.local_directory, "Comparison files"),
 				)
 
 		cwd2 = join_norm(self.local_directory, self.modelname)
@@ -1015,16 +890,21 @@ class VEModel(FilesCoreModel):
 		os.environ['path'] = join_norm(self.config['r_executable'])+';'+os.environ['path']
 
 		# Ensure that R paths are set correctly.
-		r_runtime_path = self.config['r_runtime_path']
+		r_lib = self.config['r_library_path']
+		#r_runtime_path = self.config['r_runtime_path']
 		
-		with open(join_norm(self.local_directory, self.modelname, '.Rprofile'), 'wt') as rprof:
-			rprof.write(f'source(file.path("{r_runtime_path}", "VisionEval.R"), chdir=TRUE)')
+		with open(join_norm(cwd2, '.Rprofile'), 'wt') as rprof:
+			rprof.write(f'.libPaths("{r_lib}")\n')
 
 		cmd = 'Rscript'
 
+		print(r_lib)
+
 		### The subprocess.run command runs a command line tool.
 		self.postprocess_results = subprocess.run(
-			[cmd, extraction_script],
+			#[cmd, "extract_outputs.R", cwd2],
+			#[cmd, "extract_outputs.R", self.config["model_year"]],
+			[cmd, "extract_outputs.R"],
 			cwd=cwd2,
 			capture_output=True,
 		)
@@ -1038,6 +918,7 @@ class VEModel(FilesCoreModel):
 				self.postprocess_results.stderr,
 			)
 		else:
+			#with open(join_norm(self.local_directory, self.model_path, 'output', 'stdout.log'), 'wb') as slog:
 			with open(join_norm(self.resolved_model_path, 'results', 'postprocess_stdout.log'), 'wb') as slog:
 				slog.write(self.postprocess_results.stdout)
 
