@@ -1,1 +1,4 @@
-EMAT-VE-Database/metro-verspm-06112023-500.db
+EMAT-VE-Database/*
+__pycache__/*
+scenario_inputs.7z
+Temporary/*
