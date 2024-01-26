@@ -69,7 +69,6 @@ fx.scope.info()
 ```
 
 
-
 ### Load results
 
 ```{python}
@@ -90,6 +89,7 @@ results.head()
 
 ```
 
+
 ```{python}
 #| label: display_results
 #| scrolled: true
@@ -98,7 +98,6 @@ display_experiments(fx.scope, results)
 
 
 ```{python}
-#| eval: false
 #| label: visualize_results
 viz_results = Visualizer(scope=fx.scope, data=results)#, reference_point=ref_point)
 display(viz_results.complete())
@@ -106,7 +105,6 @@ display(viz_results.complete())
 
 
 ```{python}
-#| eval: false
 if 'ref' in fx.db.read_design_names(fx.scope.name):
     ref_point = fx.db.read_experiment_all(fx.scope.name,design_name='ref')
 else:
@@ -116,7 +114,6 @@ else:
 ### Create Metamodel
 
 ```{python}
-#| eval: false
 #| scrolled: false
 # Filter results to be used for metamodel
 #measure_vars_df = pd.read_csv(os.path.join(os.getcwd(), os.pardir, os.pardir, 'metamodel_variables.csv'))
@@ -133,7 +130,6 @@ for var_name in measure_vars:
 ```
 
 ```{python}
-#| eval: false
 #| label: create_metamodel
 #| scrolled: false
 #| warning: false
@@ -152,7 +148,6 @@ with timing_log("create metamodel"):
 
 
 ```{python}
-#| eval: false
 #| label: show_metamodel
 #| scrolled: true
 
@@ -165,7 +160,6 @@ mm_results
 
 
 ```{python}
-#| eval: false
 #| label: visualize_metamodel
 #| scrolled: true
 
@@ -176,7 +170,6 @@ display(viz.complete())
 
 
 ```{python}
-#| eval: false
 #| label: mm_twoway
 #| scrolled: true
 #from MM Results
@@ -185,7 +178,6 @@ display(viz.two_way(x='PAYDHHPROP', y='Dvmt'))
 
 
 ```{python}
-#| eval: false
 #| label: mm_scatter
 #| scrolled: true
 fig, ax = plt.subplots()
@@ -200,7 +192,6 @@ ax = mm_results.plot.scatter(
 
 
 ```{python}
-#| eval: false
 #| label: get_measure_names
 #| scrolled: false
 display(viz.complete(measures=fx.scope.get_measure_names()))
@@ -208,14 +199,12 @@ display(viz.complete(measures=fx.scope.get_measure_names()))
 
 
 ```{python}
-#| eval: false
 #| label: viz_feature_scores
 #| scrolled: true
 viz.selection_feature_scores()
 ```
 
 ```{python}
-#| eval: false
 #| label: feature_scores_heatmap
 #| scrolled: false
 fx_fs = feature_scores(fx.scope, results, cmap='copper')
@@ -223,7 +212,6 @@ fx_fs
 ```
 
 ```{python}
-#| eval: false
 #| label: threshold_feature_scores
 #| scrolled: true
 
@@ -231,20 +219,17 @@ threshold_feature_scores(fx.scope, 'Dvmt_pc', mm_results)
 ```
 
 ```{python}
-#| eval: false
 #| label: feature_scores
 #| scrolled: false
 feature_scores(fx.scope, mm_results, return_type='figure')
 ```
 
 ```{python}
-#| eval: false
 #| label: Show_threshold_feature_scores
 Show(threshold_feature_scores(fx.scope, 'Dvmt_pc', mm_results, return_type='ridge figure.svg'))
 ```
 
 ```{python}
-#| eval: false
 #| label: viz.splom
 #not working
 viz.splom(
@@ -256,19 +241,17 @@ viz.splom(
 
 
 ```{python}
-#| eval: false
 #| label: viz.prim
 prim = viz.prim(target="Dvmt_pc <= 12.05")
 ```
 
 ```{python}
-#| eval: false
 #| label: prim.tradeoff_selector
 prim.tradeoff_selector()
 ```
 
 ```{python}
-#| eval: false
+
 #| label: CART
 of_interest = mm_results['Dvmt_pc'] <= 11.5
 cart = CART(
@@ -278,7 +261,7 @@ cart = CART(
 ```
 
 ```{python}
-#| eval: false
+
 #| label: CART.tree_chooser
 #| scrolled: false
 chooser = cart.tree_chooser()
@@ -304,3 +287,4 @@ picked_design
 
 
 ```
+

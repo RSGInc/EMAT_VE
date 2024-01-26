@@ -1,0 +1,107 @@
+---
+title: METRO - VERSPM - WFH
+format:
+    html:
+        code-fold: true
+fig-responsive: false
+jupyter: python3
+---
+
+Testing
+
+```{python}
+#| label: imports
+import os
+
+import asyncio
+import logging
+from matplotlib import pyplot as plt
+import numpy as np
+import pandas as pd
+import plotly.io; plotly.io.templates.default = "seaborn"
+import seaborn; seaborn.set_theme()
+import yaml
+
+import emat
+from emat.util.show_dir import show_dir
+from emat.analysis import display_experiments
+from emat.analysis import contrast_experiments
+from emat.analysis import feature_scores
+from emat.analysis import Visualizer
+from emat.analysis.feature_scoring import threshold_feature_scores
+from emat.model import create_metamodel
+from emat.util.loggers import timing_log
+from emat.util.xmle import Show
+from emat.util.loggers import log_to_stderr
+log = log_to_stderr(logging.INFO)
+from emat.workbench.analysis import CART
+
+import emat_verspm
+
+```
+
+```{python}
+#| label: parameters
+
+database_path = os.path.join(
+    os.getcwd(),"EMAT-VE-Database", "metro-verspm-06112023-500.db"
+)
+
+number_of_experiment = 500
+
+```
+
+### Show the Scope Info
+
+```{python}
+#| label: load_database
+#| include: true
+#| message: false
+#| warning: false
+db = emat.SQLiteDB(database_path, initialize=False)
+model_scope = db.read_scope()
+fx = emat_verspm.VERSPMModel(db=db, scope=model_scope)
+
+```
+
+
+```{python}
+#| label: scope_info
+#| scrolled: false
+fx.scope.info()
+```
+
+
+### Load results
+
+```{python}
+#| label: load_results
+#| warning: false
+
+num_samples = number_of_experiment
+design_name = 'exp' + str(num_samples)
+
+# if design_name not in fx.db.read_design_names(fx.scope.name):
+#     design1 = fx.design_experiments(n_samples=num_samples, design_name=design_name, sampler='ulhs')
+# else:
+#     design1 = fx.db.read_experiment_parameters(fx.scope.name,design_name=design_name)
+# design1.head()
+
+results = fx.db.read_experiment_all(fx.scope.name, design_name=design_name)
+results.head()
+
+```
+
+
+```{python}
+#| label: display_results
+#| scrolled: true
+display_experiments(fx.scope, results)
+```
+
+
+```{python}
+#| label: visualize_results
+viz_results = Visualizer(scope=fx.scope, data=results)#, reference_point=ref_point)
+display(viz_results.complete())
+```
