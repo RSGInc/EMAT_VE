@@ -9,7 +9,7 @@ format:
 
 
 ```{python}
-#| name: imports
+#| label: imports
 import os
 
 import asyncio
@@ -40,7 +40,7 @@ import emat_verspm
 ```
 
 ```{python}
-#| name: parameters
+#| label: parameters
 #| scrolled: true
 
 database_path = os.path.join(
@@ -54,7 +54,7 @@ number_of_experiment = 500
 ### Show the Scope Info
 
 ```{python}
-#| name: load_data
+#| label: load_database
 #| include: false
 db = emat.SQLiteDB(database_path, initialize=False)
 model_scope = db.read_scope()
@@ -63,34 +63,45 @@ fx = emat_verspm.VERSPMModel(db=db, scope=model_scope)
 ```
 
 ```{python}
+#| label: scope_info
 #| scrolled: false
 fx.scope.info()
 ```
 
-```{python}
-num_samples = number_of_experiment
-design_name = 'exp' + str(num_samples)
-# if design_name not in fx.db.read_design_names(fx.scope.name):
-#     design1 = fx.design_experiments(n_samples=num_samples, design_name=design_name, sampler='ulhs')
-# else:
-#     design1 = fx.db.read_experiment_parameters(fx.scope.name,design_name=design_name)
-# design1.head()
-```
 
 
 ### Load results
 
 ```{python}
-#| name: load_results
+#| label: load_results
 #| warning: false
+
+num_samples = number_of_experiment
+design_name = 'exp' + str(num_samples)
+
+# if design_name not in fx.db.read_design_names(fx.scope.name):
+#     design1 = fx.design_experiments(n_samples=num_samples, design_name=design_name, sampler='ulhs')
+# else:
+#     design1 = fx.db.read_experiment_parameters(fx.scope.name,design_name=design_name)
+# design1.head()
+
 results = fx.db.read_experiment_all(fx.scope.name, design_name=design_name)
 results.head()
 
 ```
 
 ```{python}
+#| label: display_results
 #| scrolled: true
 display_experiments(fx.scope, results)
+```
+
+
+```{python}
+#| eval: false
+#| label: visualize_results
+viz_results = Visualizer(scope=fx.scope, data=results)#, reference_point=ref_point)
+display(viz_results.complete())
 ```
 
 
@@ -105,6 +116,7 @@ else:
 ### Create Metamodel
 
 ```{python}
+#| eval: false
 #| scrolled: false
 # Filter results to be used for metamodel
 #measure_vars_df = pd.read_csv(os.path.join(os.getcwd(), os.pardir, os.pardir, 'metamodel_variables.csv'))
@@ -121,6 +133,8 @@ for var_name in measure_vars:
 ```
 
 ```{python}
+#| eval: false
+#| label: create_metamodel
 #| scrolled: false
 #| warning: false
 #| message: false
@@ -133,11 +147,13 @@ with timing_log("create metamodel"):
     except:
         mm = create_metamodel(fx.scope, results, metamodel_id=metamodel_id, suppress_converge_warnings=True, db=fx.db,
                              random_state=121, include_measures=measure_vars)
-    # display(mm.cross_val_scores())
+    # display(mm.cross_val_scores()) # this is slow
 ```
 
 
 ```{python}
+#| eval: false
+#| label: show_metamodel
 #| scrolled: true
 
 mm_design = mm.design_experiments(n_samples=4000)
@@ -149,6 +165,8 @@ mm_results
 
 
 ```{python}
+#| eval: false
+#| label: visualize_metamodel
 #| scrolled: true
 
 viz = Visualizer(scope=fx.scope, data=mm_results)
@@ -158,13 +176,8 @@ display(viz.complete())
 
 
 ```{python}
-
-viz_results = Visualizer(scope=fx.scope, data=results)#, reference_point=ref_point)
-display(viz_results.complete())
-```
-
-
-```{python}
+#| eval: false
+#| label: mm_twoway
 #| scrolled: true
 #from MM Results
 display(viz.two_way(x='PAYDHHPROP', y='Dvmt'))
@@ -172,6 +185,8 @@ display(viz.two_way(x='PAYDHHPROP', y='Dvmt'))
 
 
 ```{python}
+#| eval: false
+#| label: mm_scatter
 #| scrolled: true
 fig, ax = plt.subplots()
 ax = mm_results.plot.scatter(
@@ -185,45 +200,52 @@ ax = mm_results.plot.scatter(
 
 
 ```{python}
+#| eval: false
+#| label: get_measure_names
 #| scrolled: false
 display(viz.complete(measures=fx.scope.get_measure_names()))
 ```
 
-```{python}
-#| scrolled: false
-#from Original Results
-display(viz.two_way(x='PAYDHHPROP', y='Dvmt'))
-```
-
 
 ```{python}
+#| eval: false
+#| label: viz_feature_scores
 #| scrolled: true
 viz.selection_feature_scores()
 ```
 
 ```{python}
+#| eval: false
+#| label: feature_scores_heatmap
 #| scrolled: false
 fx_fs = feature_scores(fx.scope, results, cmap='copper')
 fx_fs
 ```
 
 ```{python}
+#| eval: false
+#| label: threshold_feature_scores
 #| scrolled: true
 
 threshold_feature_scores(fx.scope, 'Dvmt_pc', mm_results)
 ```
 
 ```{python}
+#| eval: false
+#| label: feature_scores
 #| scrolled: false
 feature_scores(fx.scope, mm_results, return_type='figure')
 ```
 
 ```{python}
+#| eval: false
+#| label: Show_threshold_feature_scores
 Show(threshold_feature_scores(fx.scope, 'Dvmt_pc', mm_results, return_type='ridge figure.svg'))
 ```
 
 ```{python}
 #| eval: false
+#| label: viz.splom
 #not working
 viz.splom(
     rows=('PAYDHHPROP'),
@@ -234,18 +256,21 @@ viz.splom(
 
 
 ```{python}
+#| eval: false
+#| label: viz.prim
 prim = viz.prim(target="Dvmt_pc <= 12.05")
 ```
 
 ```{python}
+#| eval: false
+#| label: prim.tradeoff_selector
 prim.tradeoff_selector()
 ```
 
 ```{python}
+#| eval: false
+#| label: CART
 of_interest = mm_results['Dvmt_pc'] <= 11.5
-```
-
-```{python}
 cart = CART(
     mm_results,
     of_interest,
@@ -253,6 +278,8 @@ cart = CART(
 ```
 
 ```{python}
+#| eval: false
+#| label: CART.tree_chooser
 #| scrolled: false
 chooser = cart.tree_chooser()
 chooser
