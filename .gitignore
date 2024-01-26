@@ -2,3 +2,5 @@ EMAT-VE-Database/*
 __pycache__/*
 scenario_inputs.7z
 Temporary/*
+AnalyticsViz_test.html
+AnalyticsViz_test_files/*
