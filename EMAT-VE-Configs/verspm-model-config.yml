@@ -1,0 +1,15 @@
+
+model_path: ./VERSPM
+model_archive: ./VisionEval-Archive
+#model_source: ~/vision-eval/VisionEval-Dev/built/visioneval/4.1.2/runtime/models/VERSPM-metrosts
+# base_model: E:/Projects/Clients/Metro/VE/3.0_metro/VENextGen/built/visioneval/4.1.2/runtime/models/VERSPM-metro-wfhsts-emat
+#base_model: E:/Projects/Clients/Metro/VE/3.0_metro/VENextGen/built/visioneval/4.1.2/runtime/models/VERSPM-metro-wfhsts_base
+base_model: E:/Projects/Clients/Metro/VE/3.0_metro/VENextGen/built/visioneval/4.1.2/runtime/models/VERSPM-metro-wfhsts-base-emat
+model_variant: metro-wfhsts
+model_year: 2045
+
+rel_output_path: results/outputs
+r_library_path: E:/Projects/Clients/Metro/VE/3.0_metro/VENextGen/built/visioneval/4.1.2/ve-lib
+r_runtime_path: E:/Projects/Clients/Metro/VE/3.0_metro/VENextGen/built/visioneval/4.1.2/runtime
+r_executable: C:/Program Files/R/R-4.1.2/bin
+

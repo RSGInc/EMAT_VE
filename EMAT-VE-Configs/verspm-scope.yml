@@ -1,0 +1,508 @@
+---
+# VERSPM Scope Definition
+# written on 13 April 2023
+
+scope:
+  name: VERSPM
+  desc: MetroOR Target Rule VisionEval Regional Strategic Planning Model
+
+inputs:
+  PAYDHHPROP:
+    # MIXTURE
+    # Folder: PI
+    # File Name: azone_payd_insurance_prop.csv
+    # L1: baseline low
+    # L2: STS high
+    shortname: Prop of households using PAYD insurance
+    desc: Proportion of HHs using PAYD insurance
+    ptype: uncertainty
+    dtype: float
+    default: 0.0
+    min: 0.0  # Baseline
+    max: 1.0  # Increased percentage
+
+  PROPEXTERNALITIESPAID:
+    # MIXTURE
+    # Folder: Clmp
+    # File Name: region_prop_externalities.csv
+    # L1 baseline reference low
+    # L2 STS high
+    shortname: Prop externalities paid
+    desc: Climate and other social costs imposed on a per mile basis
+    ptype: uncertainty
+    dtype: float
+    default: 0.0
+    min: 0.0  # Baseline
+    max: 1.0  # Increased percentage 
+
+  LANEMILEMULTIPLIER:
+    # MANIPULATION
+    # Folder: LM
+    # File Name: marea_lane_miles.csv
+    # This parameter uses a template file to create a new input file
+    # in the `I` group by injecting the relevant values directly
+    # into the file being manipulated.
+    shortname: Lane mile multiplier
+    ptype: lever
+    dtype: float
+    desc: Scales the Marea lane miles keeping freeway and arterials in relative scale
+    default: 1
+    min: 0.9
+    max: 1.2
+
+  #CONGESTIONCHARGES:
+      # Option A: Mixture between two values of the freeway congestion
+      # CATEGORICAL
+      # Folder: ConP
+      # This parameter uses a template file to create a new input file
+      # in the `I` group by injecting the relevant values directly
+      # into the file being manipulated.
+   #   shortname: Congestion Charges
+   #   ptype: uncertainty
+   #   dtype: cat
+   #   desc: Freeway and Arterial congestion charges
+   #   default: base
+   #   values:
+   #       - base
+   #       - sts
+   #       - freeway
+   #       - arterial
+  
+  FWYCONGESTIONCHARGES:
+    # Option B
+    # MIXTURE
+    # Folder: FConP
+    # File Name: marea_congestion_charges.csv
+    shortname: Freeway Congestion Charges
+    ptype: uncertainty
+    desc: Freeway congestion charges
+    dtype: float
+    default: 0.0
+    min: 0.0  # Baseline
+    max: 1.0  # Increased percentage 
+
+  ARTCONGESTIONCHARGES:
+    # Option B
+    # MIXTURE
+    # Folder: AConP
+    # File Name: marea_congestion_charges.csv
+    shortname: Arterial Congestion Charges
+    ptype: uncertainty
+    desc: Arterial congestion charges
+    dtype: float
+    default: 0.0
+    min: 0.0  # Baseline
+    max: 1.0  # Increased percentage 
+
+  VEHUSETAX:
+    # MIXTURE
+    # folder: RUC
+    # L1: low L2: high
+    # File Name: azone_veh_use_taxes.csv
+    # variable: VmtTax.2005
+    shortname: Vehicle use taxes
+    desc: VMT taxes 
+    ptype: uncertainty
+    dtype: float
+    default: 0.0
+    min: 0.0  # Baseline
+    max: 1.0  # Increased percentage 
+
+  TRANSITPOWERTRAIN:
+    # MIXTURE
+    # Folder: TP
+    # File Name: marea_transit_powertrain_prop.csv
+    # L1: conservative
+    # L2: optimistic
+    shortname: Transit Powertrain
+    desc: Transit Powertrain
+    ptype: lever
+    dtype: float
+    default: 0.0
+    min: 0.0  # Baseline
+    max: 1.0  # Increased percentage     
+
+  # Jon is flagging this is to be a mixture as of 6.9.23
+  TRANSITSERVICE:
+    # MIXTURE
+    # Folder: TS
+    # File Name: marea_transit_service.csv
+    # L1: conservative
+    # L2: optimistic
+    shortname: Transit Service
+    desc: Transit Service
+    ptype: lever
+    dtype: float
+    default: 0.0
+    min: 0.0  # Baseline
+    max: 1.0  # Increased percentage   
+
+  # TRANSITSERVICE:
+  #    # Option B
+  #    # CATEGORICAL
+  #    # Folder: TS
+  #    # File Name: marea_transit_service.csv
+  #    shortname: Transit Service
+  #    ptype: lever
+  #    dtype: cat
+  #    desc: Transit Service
+  #    default: RTP18
+  #    values:
+  #        - RTP18
+  #        - RTP23+
+
+  TELEWORK:
+    # MIXTURE
+    # Folder: WFH
+    # L1: Base
+    # L2: Scenario 3
+    # File Name: region_telework_input.csv
+    shortname: Teleworking rates
+    desc: Teleworking rates across all levels and categories
+    ptype: uncertainty
+    dtype: float
+    default: 0.0
+    min: 0.0  # Baseline
+    max: 1.0  # Increased percentage 
+
+  PARKING:
+    # Option B
+    # CATEGORICAL
+    # Folder: P
+    # File Name: barea_parking.csv
+    shortname: Paid Parking
+    ptype: lever
+    dtype: cat
+    desc: Paid Parking
+    default: RTP18
+    values:
+        - RTP18
+        - RTP23
+
+outputs:
+
+  Dvmt_pc:
+  #DVMTPC:
+    shortname: Daily VMT Per Capita
+    kind: info
+    parser:
+      #file: ComputedMeasures.json
+      #key: DVMTPerCapita
+      file: total_Dvmt_per_capita.csv
+      loc:
+      - 2045
+      - Dvmt_pc
+
+  VehicleTrips:
+  #VEHICLETRIPS:
+    shortname: Daily Total Vehicle trips
+    kind: info
+    parser:
+      file: total_VehicleTrips.csv
+      loc:
+      - 2045
+      - VehicleTrips
+
+  WalkTrips:
+  #WALKTRIPS:
+    shortname: Daily Total Walk trips
+    kind: info
+    parser:
+      file: total_WalkTrips.csv
+      loc:
+      - 2045
+      - WalkTrips
+
+  BikeTrips:
+  #BIKETRIPS:
+    shortname: Daily Total Bike trips
+    kind: info
+    parser:
+      file: total_BikeTrips.csv
+      loc:
+      - 2045
+      - BikeTrips
+
+  TransitTrips:
+  #TRANSITTRIPS:
+    shortname: Daily Total Transit trips
+    kind: info
+    parser:
+      file: total_TransitTrips.csv
+      loc:
+      - 2045
+      - TransitTrips
+
+  DailyCO2e:
+    shortname: CO2 Emission
+    kind: info
+    parser:
+      file: total_DailyCO2e.csv
+      loc:
+      - 2045
+      - DailyCO2e
+
+  DailyGGE:
+  #DAILYGGE:
+    shortname: Daily GGE
+    kind: info
+    parser:
+      file: total_DailyGGE.csv
+      loc:
+      - 2045
+      - DailyGGE
+
+  DailyKWH:
+  #DAILYKWH:
+    shortname: Daily KWH
+    kind: info
+    parser:
+      file: total_DailyKWH.csv
+      loc:
+      - 2045
+      - DailyKWH 
+
+  POPULATION:
+    shortname: Total Population
+    kind: info
+    parser:
+      file: total_population.csv
+      loc:
+      - 2045
+      - HhSize
+
+
+  BikeAvgTripDist:
+  #BIKEAVGTRIPDIST:
+    shortname: Average Bike trip length
+    kind: info
+    parser:
+      file: total_BikeTripLength.csv
+      loc:
+      - 2045
+      - BikeAvgTripDist
+
+  WalkAvgTripDist:
+  #WALKAVGTRIPDIST:
+    shortname: Average Walk trip length
+    kind: info
+    parser:
+      file: total_WalkTripLength.csv
+      loc:
+      - 2045
+      - WalkAvgTripDist
+
+  TransitAvgTripDist:
+  #TRANSITAVGTRIPDIST:
+    shortname: Average Transit trip length
+    kind: info
+    parser:
+      file: total_TransitTripLength.csv
+      loc:
+      - 2045
+      - TransitAvgTripDist
+
+  BikePMT:
+  #BIKEPMT:
+    shortname: Total Bike PMT
+    kind: info
+    parser:
+      file: total_BikePMT.csv
+      loc:
+      - 2045
+      - BikePMT
+
+  WalkPMT:
+  #WALKPMT:
+    shortname: Total Walk PMT
+    kind: info
+    parser:
+      file: total_WalkPMT.csv
+      loc:
+      - 2045
+      - WalkPMT
+
+  TransitPMT:
+  #TRANSITPMT:
+    shortname: Total Transit PMT
+    kind: info
+    parser:
+      file: total_TransitPMT.csv
+      loc:
+      - 2045
+      - TransitPMT
+
+  Fwyconchg:
+  #FWYCONCHG:
+    shortname: Total Freeway congestion charge
+    kind: info
+    parser:
+      file: total_Fwy_Con_Chg.csv
+      loc:
+      - 2045
+      - Fwyconchg
+
+  Artconchg:
+  #ARTCONCHG:
+    shortname: Total Arterial congestion charge
+    kind: info
+    parser:
+      file: total_Art_Con_Chg.csv
+      loc:
+      - 2045
+      - Artconchg
+
+  Totconchg:
+  #TOTCONCHG:
+    shortname: Total Freeway and Arterial congestion charge
+    kind: info
+    parser:
+      file: total_FwyArt_Con_Chg.csv
+      loc:
+      - 2045
+      - Totconchg
+
+  CongPrice:
+    shortname: Total Congestion Charge
+    kind: info
+    parser:
+      file: total_CongPrice.csv
+      loc:
+      - 2045
+      - CongPrice
+
+  Dvmt:
+    shortname: Total Dvmt
+    kind: info
+    parser:
+      file: total_Dvmt.csv
+      loc:
+      - 2045
+      - Dvmt
+
+  BusCO2e:
+    shortname: Total Bus CO2 Emission
+    kind: info
+    parser:
+      file: total_BusCO2e.csv
+      loc:
+      - 2045
+      - BusCO2e
+
+  LdvArtDvmt:
+    shortname: Total Arterial DVMT
+    kind: info
+    parser:
+      file: total_ArtDvmt.csv
+      loc:
+      - 2045
+      - LdvArtDvmt
+
+  LdvFwyDvmt:
+    shortname: Total Freeway DVMT
+    kind: info
+    parser:
+      file: total_FwyDvmt.csv
+      loc:
+      - 2045
+      - LdvFwyDvmt
+
+  AvePaydInsCostPM:
+    shortname: Average pay as you drive insurance cost per mile
+    kind: info
+    parser:
+      file: total_AvePaydInsCostPM.csv
+      loc:
+      - 2045
+      - AvePaydInsCostPM
+
+  VmtTax:
+    shortname: Average vmt tax
+    kind: info
+    parser:
+      file: total_VmtTax.csv
+      loc:
+      - 2045
+      - VmtTax
+
+  AveCongPricePM:
+    shortname: Average congestion price per mile
+    kind: info
+    parser:
+      file: total_AveCongPricePM.csv
+      loc:
+      - 2045
+      - AveCongPricePM
+
+  AvePevChrgPM:
+    shortname: Average PEV charge per mile
+    kind: info
+    parser:
+      file: total_AvePevChrgPM.csv
+      loc:
+      - 2045
+      - AvePevChrgPM
+
+  AveFuelTaxPM:
+    shortname: Average fuel tax per mile
+    kind: info
+    parser:
+      file: total_AveFuelTaxPM.csv
+      loc:
+      - 2045
+      - AveFuelTaxPM
+
+  AveRoadUseTaxPM:
+    shortname: Average road use tax per mile
+    kind: info
+    parser:
+      file: total_AveRoadUseTaxPM.csv
+      loc:
+      - 2045
+      - AveRoadUseTaxPM
+
+  AveSocCostPaidPM:
+    shortname: Average social cost paid per mile
+    kind: info
+    parser:
+      file: total_AveSocCostPaidPM.csv
+      loc:
+      - 2045
+      - AveSocCostPaidPM
+
+  AveEnvCostPaidPM:
+    shortname: Average environmental cost paid per mile
+    kind: info
+    parser:
+      file: total_AveEnvCostPaidPM.csv
+      loc:
+      - 2045
+      - AveEnvCostPaidPM
+
+  AveVehCostPM:
+    shortname: Average vehicle cost per mile
+    kind: info
+    parser:
+      file: total_AveVehCostPM.csv
+      loc:
+      - 2045
+      - AveVehCostPM
+
+  # AvePaydInsCostPM:
+  #   shortname: Average PayD Insurance cost per mile
+  #   kind: info
+  #   parser:
+  #     file: total_AvePaydInsCostPM.csv
+  #     loc:
+  #     - 2045
+  #     - AvePaydInsCostPM
+  #     
+  #total Pay you drive insurance paid...     -- this nees to be added for 6.9.23  #AG added 6.10.23
+  PaydInsCost:
+    shortname: Annual PAYD insurance
+    kind: info
+    parser:
+      file: total_PayDInsCost.csv
+      loc:
+      - 2045
+      - PaydInsCostPaid
