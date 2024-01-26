@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 import logging
 import tempfile
-import re
+# import re
 import shutil
-import platform
+# import platform
 import subprocess
-import json
+# import json
 from distutils.dir_util import copy_tree
 from distutils.file_util import copy_file
 
@@ -62,9 +62,9 @@ class VERSPMModel(FilesCoreModel):
 
 		# Make a temporary directory for this instance.
 		self.master_directory = tempfile.TemporaryDirectory(dir=join_norm(this_directory,'Temporary'))
-		os.chdir(self.master_directory.name)
-		_logger.warning(f"changing cwd to {self.master_directory.name}")
-		cwd = self.master_directory.name
+		# os.chdir(self.master_directory.name)
+		# _logger.warning(f"changing cwd to {self.master_directory.name}")
+		# cwd = self.master_directory.name
 
 
 		# Housekeeping for this example:
@@ -72,7 +72,7 @@ class VERSPMModel(FilesCoreModel):
 		for i in ['model-config']:
 			shutil.copy2(
 				join_norm(this_directory, 'EMAT-VE-Configs', f"verspm-{i}.yml"),
-				join_norm(cwd, f"verspm-{i}.yml"),
+				join_norm(self.master_directory.name, f"verspm-{i}.yml"),
 			)
 
 		if scope is None:
@@ -80,10 +80,10 @@ class VERSPMModel(FilesCoreModel):
 			for i in ['scope']:
 				shutil.copy2(
 					join_norm(this_directory, 'EMAT-VE-Configs', f"verspm-{i}.yml"),
-					join_norm(cwd, f"verspm-{i}.yml"),
+					join_norm(self.master_directory.name, f"verspm-{i}.yml"),
 				)
 		else:
-			scope.dump(filename=join_norm(cwd, f"verspm-scope.yml"))
+			scope.dump(filename=join_norm(self.master_directory.name, f"verspm-scope.yml"))
 
 		# Initialize a new daatabase if none was given.
 		if db is None:
@@ -103,11 +103,11 @@ class VERSPMModel(FilesCoreModel):
 
 		# Initialize the super class (FilesCoreModel)
 		super().__init__(
-			configuration=join_norm(cwd, "verspm-model-config.yml"),
+			configuration=join_norm(self.master_directory.name, "verspm-model-config.yml"),
 			scope=scope,
 			db=db,
 			name='VERSPM',
-			local_directory = cwd,
+			local_directory = self.master_directory.name,
 		)
 		if isinstance(db, SQLiteDB):
 			self._sqlitedb_path = db.database_path
@@ -119,7 +119,7 @@ class VERSPMModel(FilesCoreModel):
 		# access to built environment and R.
 		# copy_tree(
 		# 	join_norm(this_directory, 'VERSPM'),
-		# 	join_norm(cwd, self.model_path),
+		# 	join_norm(self.master_directory.name, self.model_path),
 		# )
 
 		# The code doesn't run. The intention is to have installModel install a model here.
@@ -127,7 +127,7 @@ class VERSPMModel(FilesCoreModel):
 		# during setup?
 		# subprocess.run(
 		# 	['Rscript', '-e', 'installModel("VERSPM", "metro-wfhsts")'],
-		# 	cwd=cwd,
+		# 	cwd=self.master_directory.name,
 		# 	capture_output=True,
 		# )
 
