@@ -1,6 +1,9 @@
 ---
 title: METRO - VERSPM - WFH
 jupyter: python3
+format:
+    html:
+        code-fold: true
 ---
 
 
@@ -8,44 +11,55 @@ jupyter: python3
 ```{python}
 #| name: imports
 import os
+
+import asyncio
+import logging
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn; seaborn.set_theme()
 import plotly.io; plotly.io.templates.default = "seaborn"
-import emat
+import seaborn; seaborn.set_theme()
 import yaml
+
+import emat
 from emat.util.show_dir import show_dir
 from emat.analysis import display_experiments
-import logging
+from emat.analysis import contrast_experiments
+from emat.analysis import feature_scores
+from emat.analysis import Visualizer
+from emat.analysis.feature_scoring import threshold_feature_scores
+from emat.model import create_metamodel
+from emat.util.loggers import timing_log
+from emat.util.xmle import Show
 from emat.util.loggers import log_to_stderr
 log = log_to_stderr(logging.INFO)
+from emat.workbench.analysis import CART
+
 import emat_verspm
-import asyncio
-database_path = os.path.join(os.getcwd(),"EMAT-VE-Database", "metro-verspm-06112023-500.db")
-run_experiments = False
+
+```
+
+```{python}
+#| name: parameters
+#| scrolled: true
+
+database_path = os.path.join(
+    os.getcwd(),"EMAT-VE-Database", "metro-verspm-06112023-500.db"
+)
+
 number_of_experiment = 500
+
 ```
 
+### Show the Scope Info
 
 ```{python}
-#| scrolled: true
-initialize = not os.path.exists(database_path)
-db = emat.SQLiteDB(database_path, initialize=initialize)
-model_scope = emat.Scope(os.path.join(os.getcwd(), 'verspm-emat-files', 'verspm-scope.yml'))
-```
+#| name: load_data
+#| include: false
+db = emat.SQLiteDB(database_path, initialize=False)
+model_scope = db.read_scope()
+fx = emat_verspm.VERSPMModel(db=db, scope=model_scope)
 
-
-```{python}
-model_scope
-```
-
-```{python}
-#| scrolled: true
-if run_experiments:
-    fx = emat_verspm.VERSPMModel(db=db, scope=model_scope)
-else:
-    model_scope = db.read_scope()
-    fx = emat_verspm.VERSPMModel(db=db, scope=model_scope)
 ```
 
 ```{python}
@@ -56,56 +70,39 @@ fx.scope.info()
 ```{python}
 num_samples = number_of_experiment
 design_name = 'exp' + str(num_samples)
-if design_name not in fx.db.read_design_names(fx.scope.name):
-    design1 = fx.design_experiments(n_samples=num_samples, design_name=design_name, sampler='ulhs')
-else:
-    design1 = fx.db.read_experiment_parameters(fx.scope.name,design_name=design_name)
-design1.head()
+# if design_name not in fx.db.read_design_names(fx.scope.name):
+#     design1 = fx.design_experiments(n_samples=num_samples, design_name=design_name, sampler='ulhs')
+# else:
+#     design1 = fx.db.read_experiment_parameters(fx.scope.name,design_name=design_name)
+# design1.head()
 ```
 
-params = design1.iloc[0,:].to_dict()
-params
 
-fx.setup(params)
-
-fx.run()
-
-fx.load_measures()
+### Load results
 
 ```{python}
-if run_experiments:
-    background = fx.async_experiments(
-        design=design1,
-        max_n_workers=17,
-        batch_size=1,
-    )
-#     fx.run_experiments(design=design1,db=fx.db)
-```
-
-```{python}
-if run_experiments:
-    print(background.progress()) # Initially everything is pending
-```
-
-```{python}
-if run_experiments:
-    print(background.progress()) # Initially everything is pending
-```
-
-```{python}
-if run_experiments:
-    results = await background.final_results()
-else:
-    results = fx.db.read_experiment_all(fx.scope.name,design_name=design_name)
+#| name: load_results
+#| warning: false
+results = fx.db.read_experiment_all(fx.scope.name, design_name=design_name)
 results.head()
+
 ```
 
 ```{python}
+#| scrolled: true
+display_experiments(fx.scope, results)
+```
+
+
+```{python}
+#| eval: false
 if 'ref' in fx.db.read_design_names(fx.scope.name):
     ref_point = fx.db.read_experiment_all(fx.scope.name,design_name='ref')
 else:
     ref_point = fx.run_reference_experiment()
 ```
+
+### Create Metamodel
 
 ```{python}
 #| scrolled: false
@@ -125,8 +122,8 @@ for var_name in measure_vars:
 
 ```{python}
 #| scrolled: false
-from emat.model import create_metamodel
-from emat.util.loggers import timing_log
+#| warning: false
+#| message: false
 
 metamodel_id = 1
 
@@ -136,307 +133,56 @@ with timing_log("create metamodel"):
     except:
         mm = create_metamodel(fx.scope, results, metamodel_id=metamodel_id, suppress_converge_warnings=True, db=fx.db,
                              random_state=121, include_measures=measure_vars)
+    # display(mm.cross_val_scores())
 ```
 
-with timing_log("crossvalidate metamodel"):
-    display(mm.cross_val_scores())
 
 ```{python}
 #| scrolled: true
-from emat.analysis import contrast_experiments
+
 mm_design = mm.design_experiments(n_samples=4000)
 mm_results = mm.run_experiments(mm_design)
 mm_results
+
 ```
+
+
 
 ```{python}
 #| scrolled: true
-from emat.analysis import display_experiments
-display_experiments(fx.scope, results)
-```
 
-design2 = design1.iloc[:3,:]
-design2
-
-```{python}
-#| scrolled: true
-from emat.analysis import Visualizer
 viz = Visualizer(scope=fx.scope, data=mm_results)
 display(viz.complete())
 ```
 
-Designed 3 experiments (RTP 23 initial 28 April, Full STS, and baseline )
 
-design2 = pd.read_csv('../../three_experiments.csv', index_col='experiment')
-design2
-
-design2_results = mm.run_experiments(design2)
-design2_results
-
-design2_results.T
-
-#exporting the mm results to CSV
-design2_results.to_csv('3scenarios.csv')
 
 ```{python}
-from emat.analysis import Visualizer
-viz = Visualizer(scope=fx.scope, data=results)#, reference_point=ref_point)
+
+viz_results = Visualizer(scope=fx.scope, data=results)#, reference_point=ref_point)
+display(viz_results.complete())
 ```
 
-RTP23 - AP Design
-
-```{python}
-#this design1 is an example for specifying some inputs and leaving others for further analysis. 
-#design experiment function can be constrained to either policy or uncertainty.
-mm_design_1 = mm.design_experiments(n_samples=4000, sample_from="all")
-mm_design_1['FWYCONGESTIONCHARGES'] = 0.6  #RMPP is about 0.6 value (as of 6.12.23 at 1.3 million per day)
-mm_design_1['ARTCONGESTIONCHARGES'] = 0
-mm_design_1['TRANSITSERVICE'] = -.09
-mm_design_1['TELEWORK'] = 0.65
-mm_design_1['PARKING'] = "RTP23"
-mm_design_1['LANEMILEMULTIPLIER'] = 1
-mm_design_1['PAYDHHPROP'] = 0
-mm_design_1['PROPEXTERNALITIESPAID'] = 0
-mm_design_1['TRANSITPOWERTRAIN'] = 0
-mm_design_1['VEHUSETAX'] = 0
-mm_design_1.index.name = "experiment"
-mm_design_1.index = mm_design.index
-mm_results_1 = mm.run_experiments(mm_design_1)
-mm_results_1
-```
-
-```{python}
-#exporting the mm results to CSV
-mm_results_1.to_csv('../../11June_mm_1results_Pricing_v1.csv')
-```
-
-STS Design - 2
-
-```{python}
-#this design2 is an example for specifying some inputs and leaving others for further analysis. 
-#design experiment function can be constrained to either policy or uncertainty.
-mm_design_2 = mm.design_experiments(n_samples=4000, sample_from="all")
-mm_design_2['FWYCONGESTIONCHARGES'] = 1  #RMPP is about 0.5 value (as of 4.28.23)
-mm_design_2['ARTCONGESTIONCHARGES'] = 1
-mm_design_2['TRANSITSERVICE'] = -.09
-mm_design_2['TELEWORK'] = 0.65
-mm_design_2['PARKING'] = "RTP23"
-mm_design_2['LANEMILEMULTIPLIER'] = 1
-mm_design_2['PAYDHHPROP'] = 1
-mm_design_2['PROPEXTERNALITIESPAID'] = 1
-mm_design_2['TRANSITPOWERTRAIN'] = 0
-mm_design_2['VEHUSETAX'] = 1
-mm_design_2.index.name = "experiment"
-mm_design_2.index = mm_design.index
-mm_results_2 = mm.run_experiments(mm_design_2)
-mm_results_2
-```
-
-```{python}
-#exporting the mm results to CSV
-mm_results_2.to_csv('../../11June_mm_2results_Pricing_v1.csv')
-```
-
-```{python}
-#| scrolled: true
-#this design3 is an example for specifying some inputs and leaving others for further analysis. 
-#design experiment function can be constrained to either policy or uncertainty.
-mm_design_3 = mm.design_experiments(n_samples=4000, sample_from="all")
-#mm_design_3['FWYCONGESTIONCHARGES'] = 1  #RMPP is about 0.5 value (as of 4.28.23)
-#mm_design_3['ARTCONGESTIONCHARGES'] = 1
-mm_design_3['TRANSITSERVICE'] = 1
-mm_design_3['TELEWORK'] = 0.65
-mm_design_3['PARKING'] = "RTP23"
-mm_design_3['LANEMILEMULTIPLIER'] = 1
-mm_design_3['PAYDHHPROP'] = 0.27
-#mm_design_3['PROPEXTERNALITIESPAID'] = 1
-mm_design_3['TRANSITPOWERTRAIN'] = 0
-#mm_design_3['VEHUSETAX'] = 1
-mm_design_3.index.name = "experiment"
-mm_design_3.index = mm_design.index
-mm_results_3 = mm.run_experiments(mm_design_3)
-mm_results_3
-```
-
-```{python}
-#set the model version for the budget and cost calculations
-#to see if we can account for the revenue and the amount of transit
-mm_modelversion = mm_results_3
-inflator = 1.26
-mm_modelversion['transitcost'] = (1438847485.60319 + mm_modelversion['TRANSITSERVICE']*1821625158)-1275668433.75329
-mm_modelversion['revenue2023'] = inflator*365*(mm_modelversion['Totconchg'] + ((mm_modelversion['VmtTax']+mm_modelversion['AvePevChrgPM']+mm_modelversion['AveFuelTaxPM']+mm_modelversion['AveSocCostPaidPM']+mm_modelversion['AveEnvCostPaidPM'])*mm_modelversion['Dvmt']))
-mm_modelversion['transitreinvest'] = mm_modelversion['revenue2023']-mm_modelversion['transitcost']
-mm_modelversion['transitreinvest'] = mm_modelversion['transitreinvest'] >0
-mm_modelversion['AveRoadUseTaxPM23'] = inflator*mm_modelversion['AveRoadUseTaxPM']
-mm_modelversion['congpricePM23'] = inflator*mm_modelversion['Totconchg']/(mm_modelversion['LdvArtDvmt'] + mm_modelversion['LdvFwyDvmt'])
-mm_modelversion['userfeesPM23'] = inflator*mm_modelversion['congpricePM23']+mm_modelversion['VmtTax']+mm_modelversion['AvePevChrgPM']+mm_modelversion['AveFuelTaxPM']+mm_modelversion['AveSocCostPaidPM']+mm_modelversion['AveEnvCostPaidPM']
-```
-
-```{python}
-#exporting the mm results to CSV
-mm_results_3.to_csv('../../11June_mm_3results_Pricing_v1.6.csv')
-```
-
-```{python}
-#| scrolled: true
-from emat.analysis import Visualizer
-viz3 = Visualizer(scope=fx.scope, data=mm_results_3)
-display(viz3.complete())
-```
 
 ```{python}
 #| scrolled: true
 #from MM Results
-display(viz3.two_way(x='PAYDHHPROP', y='Dvmt'))
+display(viz.two_way(x='PAYDHHPROP', y='Dvmt'))
 ```
 
-contrast_experiments(fx.scope, mm_results, results.loc[:,mm_results.columns.tolist()])
 
 ```{python}
 #| scrolled: true
-from matplotlib import pyplot as plt
 fig, ax = plt.subplots()
-ax = mm_results_3.plot.scatter(
-    c='userfeesPM23',
-    y='revenue2023',
+ax = mm_results.plot.scatter(
+    c='CongPrice',
+    y='VehicleTrips',
     x='Dvmt_pc',
     cmap='coolwarm',
     ax=ax,
 )
 ```
 
-```{python}
-#| scrolled: true
-from matplotlib import pyplot as plt
-fig, ax = plt.subplots()
-ax = mm_results_3.plot.scatter(
-    c='userfeesPM23',
-    y='TRANSITSERVICE',
-    x='Dvmt_pc',
-    cmap='coolwarm',
-    ax=ax,
-)
-```
-
-```{python}
-#| scrolled: true
-from matplotlib import pyplot as plt
-fig, ax = plt.subplots()
-ax = mm_results_3.plot.scatter(
-    c='revenue2023',
-    y='TRANSITSERVICE',
-    x='Dvmt_pc',
-    cmap='coolwarm',
-    ax=ax,
-)
-```
-
-```{python}
-#| scrolled: true
-from matplotlib import pyplot as plt
-fig, ax = plt.subplots()
-ax = mm_results_3.plot.scatter(
-    c='AveRoadUseTaxPM23',
-    y='TRANSITSERVICE',
-    x='Dvmt_pc',
-    cmap='coolwarm',
-    ax=ax,
-)
-```
-
-```{python}
-#| scrolled: false
-from matplotlib import pyplot as plt
-fig, ax = plt.subplots()
-ax = mm_results_3.plot.scatter(
-    c='userfeesPM',
-    y='TRANSITSERVICE',
-    x='AveRoadUseTaxPM',
-    cmap='coolwarm',
-    ax=ax,
-)
-```
-
-#set the model version for the budget and cost calculations
-#to see if we can account for the revenue and the amount of transit
-mm_modelversion = mm_results_3
-mm_modelversion['Revenue'] = 365*(mm_modelversion['Totconchg'] + ((mm_modelversion['VmtTax']+mm_modelversion['AvePevChrgPM']+mm_modelversion['AveFuelTaxPM']+mm_modelversion['AveSocCostPaidPM']+mm_modelversion['AveEnvCostPaidPM'])*mm_modelversion['Dvmt']))
-
-```{python}
-#| scrolled: false
-from matplotlib import pyplot as plt
-fig, ax = plt.subplots()
-ax = mm_results_3.plot.scatter(
-    c='Dvmt_pc',
-    y='TRANSITSERVICE',
-    x='revenue2023',
-    cmap='coolwarm',
-    ax=ax,
-)
-```
-
-```{python}
-#| scrolled: true
-#this design4 is an example for specifying some inputs and leaving others for further analysis. 
-#design experiment function can be constrained to either policy or uncertainty.
-mm_design_4 = mm.design_experiments(n_samples=4000, sample_from="all")
-mm_design_4['FWYCONGESTIONCHARGES'] = .5  #RMPP is about 0.5 value (as of 4.28.23)
-mm_design_4['ARTCONGESTIONCHARGES'] = .5
-#mm_design_4['TRANSITSERVICE'] = 1
-#mm_design_4['TELEWORK'] = 0.65
-#mm_design_4['PARKING'] = "RTP23"
-#mm_design_4['LANEMILEMULTIPLIER'] = 1
-mm_design_4['PAYDHHPROP'] = 0.27
-mm_design_4['PROPEXTERNALITIESPAID'] = 1
-#mm_design_4['TRANSITPOWERTRAIN'] = 0
-mm_design_4['VEHUSETAX'] = 1
-mm_design_4.index.name = "experiment"
-mm_design_4.index = mm_design.index
-mm_results_4 = mm.run_experiments(mm_design_4)
-mm_results_4
-```
-
-```{python}
-#set the model version for the budget and cost calculations
-#to see if we can account for the revenue and the amount of transit
-mm_modelversion = mm_results_4
-inflator = 1.26
-mm_modelversion['transitcost'] = (1438847485.60319 + mm_modelversion['TRANSITSERVICE']*1821625158)-1275668433.75329
-mm_modelversion['revenue2023'] = inflator*365*(mm_modelversion['Totconchg'] + ((mm_modelversion['VmtTax']+mm_modelversion['AvePevChrgPM']+mm_modelversion['AveFuelTaxPM']+mm_modelversion['AveSocCostPaidPM']+mm_modelversion['AveEnvCostPaidPM'])*mm_modelversion['Dvmt']))
-mm_modelversion['transitreinvest'] = mm_modelversion['revenue2023']-mm_modelversion['transitcost']
-mm_modelversion['transitreinvest'] = mm_modelversion['transitreinvest'] >0
-mm_modelversion['AveRoadUseTaxPM23'] = inflator*mm_modelversion['AveRoadUseTaxPM']
-mm_modelversion['congpricePM23'] = inflator*mm_modelversion['Totconchg']/(mm_modelversion['LdvArtDvmt'] + mm_modelversion['LdvFwyDvmt'])
-mm_modelversion['userfeesPM23'] = inflator*mm_modelversion['congpricePM23']+mm_modelversion['VmtTax']+mm_modelversion['AvePevChrgPM']+mm_modelversion['AveFuelTaxPM']+mm_modelversion['AveSocCostPaidPM']+mm_modelversion['AveEnvCostPaidPM']
-```
-
-```{python}
-#exporting the mm results to CSV
-mm_results_4.to_csv('../../11June_mm_3results_Pricing_v1.6.csv')
-```
-
-```{python}
-#| scrolled: true
-from emat.analysis import Visualizer
-viz4 = Visualizer(scope=fx.scope, data=mm_results_4)
-display(viz4.complete())
-```
-
-```{python}
-#| scrolled: true
-#from MM Results
-display(viz4.two_way(x='PAYDHHPROP', y='Dvmt'))
-```
-
-```{python}
-#| scrolled: true
-#from MM Results
-display(viz3.two_way(x='Dvmt_pc', y='Revenue'))
-```
-
-#Showing the three experiments againsted the suite of possible experiments
-from emat.analysis import contrast_experiments
-contrast_experiments(fx.scope, results, mm_results_3)
 
 ```{python}
 #| scrolled: false
@@ -449,145 +195,43 @@ display(viz.complete(measures=fx.scope.get_measure_names()))
 display(viz.two_way(x='PAYDHHPROP', y='Dvmt'))
 ```
 
-Displaying the Metamodel Design 4 Domain
-
-```{python}
-#this design4 is an example for specifying some inputs and leaving others for further analysis. 
-#design experiment function can be constrained to either policy or uncertainty.
-mm_design_4 = mm.design_experiments(n_samples=4000, sample_from="all")
-#mm_design_4['FWYCONGESTIONCHARGES'] = 1  #RMPP is about 0.5 value (as of 4.28.23)
-#mm_design_4['ARTCONGESTIONCHARGES'] = 0
-mm_design_4['TRANSITSERVICE'] = -.09
-mm_design_4['TELEWORK'] = 0.65
-mm_design_4['PARKING'] = "RTP23"
-mm_design_4['LANEMILEMULTIPLIER'] = 1
-#mm_design_4['PAYDHHPROP'] = 0.0
-#mm_design_4['PROPEXTERNALITIESPAID'] = 0
-#mm_design_4['TRANSITPOWERTRAIN'] = 0
-#mm_design_4['VEHUSETAX'] = 0
-mm_design_4.index.name = "experiment"
-mm_design_4.index = mm_design.index
-mm_results_4 = mm.run_experiments(mm_design_4)
-mm_results_4
-```
 
 ```{python}
 #| scrolled: true
-from emat.analysis import Visualizer
-viz4 = Visualizer(scope=fx.scope, data=mm_results_4)
-display(viz4.complete())
-```
-
-```{python}
-#exporting the mm results to CSV
-mm_results_4.to_csv('../../11June_mm_4results_Pricing_v1.csv')
+viz.selection_feature_scores()
 ```
 
 ```{python}
 #| scrolled: false
-#from MM Results
-display(viz4.two_way(x='PAYDHHPROP', y='Dvmt'))
-```
-
-```{python}
-#| scrolled: true
-viz4.selection_feature_scores()
-```
-
-```{python}
-#| scrolled: false
-from emat.analysis import feature_scores
 fx_fs = feature_scores(fx.scope, results, cmap='copper')
 fx_fs
 ```
 
 ```{python}
-fx_fs.to_excel('../../feature_score_2Nov.xlsx')
-```
-
-```{python}
 #| scrolled: true
-from emat.analysis.feature_scoring(mm_results_4)
-```
 
-```{python}
-#| scrolled: true
-from emat.analysis.feature_scoring import threshold_feature_scores
-threshold_feature_scores(fx.scope, 'Dvmt_pc', mm_results_4)
+threshold_feature_scores(fx.scope, 'Dvmt_pc', mm_results)
 ```
 
 ```{python}
 #| scrolled: false
-feature_scores(fx.scope, mm_results_4, return_type='figure')
+feature_scores(fx.scope, mm_results, return_type='figure')
 ```
 
 ```{python}
-from emat.util.xmle import Show
-from emat.analysis.feature_scoring import threshold_feature_scores
-Show(threshold_feature_scores(fx.scope, 'Dvmt_pc', mm_results_3, return_type='ridge figure.svg'))
+Show(threshold_feature_scores(fx.scope, 'Dvmt_pc', mm_results, return_type='ridge figure.svg'))
 ```
 
+```{python}
+#| eval: false
 #not working
 viz.splom(
     rows=('PAYDHHPROP'),
     cols=('Dmvt_pc'),
 )
 
-```{python}
-from matplotlib import pyplot as plt
-fig, ax = plt.subplots()
-ax = mm_results_4.plot.scatter(
-    c='VEHUSETAX',
-    y='FWYCONGESTIONCHARGES',
-    x='Dvmt_pc',
-    cmap='coolwarm',
-    ax=ax,
-)
 ```
 
-```{python}
-#this design3 is an example for specifying some inputs and leaving others for further analysis. 
-#design experiment function can be constrained to either policy or uncertainty.
-mm_design_5 = mm.design_experiments(n_samples=4000, sample_from="all")
-mm_design_5['FWYCONGESTIONCHARGES'] = .66  #RMPP is about 0.6 value (as of 5.23.23)
-#mm_design_5['ARTCONGESTIONCHARGES'] = 0
-mm_design_5['TRANSITSERVICE'] = "RTP23"
-mm_design_5['TELEWORK'] = 0.65
-mm_design_5['PARKING'] = "RTP23"
-mm_design_5['LANEMILEMULTIPLIER'] = 1
-mm_design_5['PAYDHHPROP'] = 0.0
-#mm_design_5['PROPEXTERNALITIESPAID'] = 0
-mm_design_5['TRANSITPOWERTRAIN'] = 0
-#mm_design_5['VEHUSETAX'] = 0
-mm_design_5.index.name = "experiment"
-mm_design_5.index = mm_design.index
-mm_results_5 = mm.run_experiments(mm_design_5)
-mm_results_5
-```
-
-```{python}
-#exporting the mm results to CSV
-mm_results_5.to_csv('../../23May_mm_5results_Pricing_v1.csv')
-```
-
-```{python}
-#| scrolled: false
-from emat.analysis import Visualizer
-viz5 = Visualizer(scope=fx.scope, data=mm_results_5)
-display(viz5.complete())
-```
-
-```{python}
-from matplotlib import pyplot as plt
-fig, ax = plt.subplots()
-ax = mm_results_5.plot.scatter(
-    c='VEHUSETAX',
-    y='FWYCONGESTIONCHARGES',
-    x='Dvmt_pc',
-    cmap='coolwarm',
-    ax=ax,
-)
-```
 
 ```{python}
 prim = viz.prim(target="Dvmt_pc <= 12.05")
@@ -598,14 +242,12 @@ prim.tradeoff_selector()
 ```
 
 ```{python}
-of_interest = mm_results_3['Dvmt_pc']<=11.5
+of_interest = mm_results['Dvmt_pc'] <= 11.5
 ```
 
 ```{python}
-from emat.workbench.analysis import CART
-
 cart = CART(
-    mm_results_3,
+    mm_results,
     of_interest,
 )
 ```
@@ -615,6 +257,9 @@ cart = CART(
 chooser = cart.tree_chooser()
 chooser
 ```
+
+```{python}
+#| eval: false
 
 #not working
 box = cart.select(1)
@@ -630,3 +275,5 @@ mm.regression.estimators[1][1]
 picked_design = mm.pick_new_experiments(design2, batch_size=60,scope=fx.scope,design_name='pexp60',debug=['Bicycles', 'StateTotalGGE2045'])
 picked_design
 
+
+```
