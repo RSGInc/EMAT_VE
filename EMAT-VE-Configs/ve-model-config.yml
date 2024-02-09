@@ -1,21 +1,21 @@
 model_archive: ./VisionEval-Archive
 model_type: VE-State
-model_variant: odot-otp
+model_variant: odot-ICFpolicy
 # Future year to run the scenarios on
 model_year: 2050
 # Base model to be loaded to run future year
 base_year: 2010
-base_model: C:/Users/aditya.gore/Projects/OregScenPlanning_VE/GitHub/VisionEval-Dev/built/visioneval/4.2.3/runtime/models/VE-State-odot-otp
+base_model: E:/Projects/Clients/odot/VisionEval/Pricing_Test/models/ODOT_BaseYear
 # Model results extraction script
-extract_script: extract_outputs.R
+extract_script: pricing_outputs.R
 
 rel_output_path: results/output
 # Path to VE library that should be used to run the VE model
-r_library_path: C:/Users/aditya.gore/Projects/OregScenPlanning_VE/GitHub/VisionEval-Dev/built/visioneval/4.2.3/ve-lib
+r_library_path: E:/Projects/Clients/odot/VisionEval/Pricing_Test/ve-lib
 # Path to VE runtime environment which will give the wrapper access to the different VEModel tools
-r_runtime_path: C:/Users/aditya.gore/Projects/OregScenPlanning_VE/GitHub/VisionEval-Dev/built/visioneval/4.2.3/runtime
+r_runtime_path: E:/Projects/Clients/odot/VisionEval/Pricing_Test
 # R executable that should be used to run particular VE model. Ensure that the VE library and runtime environment matches with the version of R executable specified here.
-r_executable: C:/Program Files/R/R-4.2.3/bin
+r_executable: C:/Program Files/R/R-4.1.0/bin
 
 
 # Mandatory field but not used by the model

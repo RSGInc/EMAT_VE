@@ -132,6 +132,8 @@ class VEModel(FilesCoreModel):
 		self.modelname = self.config['model_type'] + '-' + self.config['model_variant']
 		modelpath = r_join_norm(self.local_directory, self.modelname)
 		self.model_path = modelpath
+		_logger.info(f"{self.modelname} SETUP complete")
+		_logger.info(f"{self.model_path} SETUP complete")
 		
 		# Add the model year and base year
 		self.model_base_year = int(self.config['base_year'])
@@ -148,14 +150,19 @@ class VEModel(FilesCoreModel):
 
 			# Update the config to load the base year model
 			runConfig_ls <-  list(
-			Model       = "{self.config['model_type']} 3.0 MultiModal, STS Powertrain and Telework",
-			Scenario    = "{self.config['model_type']} {self.config["model_year"]} METRO MultiModal, STS Powertrain, with telework",
-			Description = "STS inputs",
-			Region      = "METRO",
+			Model       = "{self.config['model_type']} 3.0 MultiModal, Telework, and Policy",
+			Scenario    = "{self.config['model_type']} {self.config["model_year"]} 3.0 MultiModal, Telework, and Policy",
+			Description = "ODOT Policy Model",
+			Region      = "Oregon",
 			State       = "OR",
 			BaseYear    = "2010",
 			Years       = c('{self.config["model_year"]}'),
-			LoadModel   = '{self.config['base_model']}'
+			ModelScript = "run_model_policy.R",
+			LoadModel   = '{self.config['base_model']}',			
+			StateSalesTaxPolicy = 1,
+			RegistrationFeePolicy = 1,
+			PropertyTaxPolicy = 1,
+			DeprLeasedVehPolicy = 1
 			)
 
 			viewSetup(Param_ls = runConfig_ls)
@@ -174,7 +181,7 @@ class VEModel(FilesCoreModel):
 		 	cwd=self.local_directory,
 		 	capture_output=False)
 		
-		print(results)
+		#print(results)
 
 		def read_csv_index_character(filename, index_colname, **kwargs,):
 			df = pd.read_csv(filename, **kwargs)
@@ -238,6 +245,7 @@ class VEModel(FilesCoreModel):
 
 		# Set R environment path to run R and use visioneval to install model
 		os.environ['path'] = join_norm(self.config['r_executable'])+';'+os.environ['path']
+		_logger.info(f"{self.local_directory} SETUP complete")
 
 		# Check if we are using distributed multi-processing. If so,
 		# we'll need to copy some files into a local working directory,
@@ -249,6 +257,7 @@ class VEModel(FilesCoreModel):
 			# and check if this code is running on a worker.
 			from dask.distributed import get_worker
 			worker = get_worker()
+			_logger.info(f"{worker.local_directory} SETUP complete")
 		except (ValueError, ImportError):
 			# If the library is not available, or if the code is
 			# not running on a worker, then we are not running
@@ -284,6 +293,9 @@ class VEModel(FilesCoreModel):
 				)
 				self.local_directory = worker.local_directory
 				self.model_path = join_norm(worker.local_directory, self.modelname)
+				_logger.info(f"{self.model_path} SETUP complete")
+				_logger.info(f"{self.local_directory} SETUP complete")
+				_logger.info(f"{self.modelname} SETUP complete")
 
 		# The process of manipulating each input file is broken out
 		# into discrete sub-methods, as each step is loosely independent
@@ -331,6 +343,16 @@ class VEModel(FilesCoreModel):
 			self._manipulate_transitscen(params)
 		if 'POWERTRAINSCEN' in tmip_vars:
 			self._manipulate_powertrainscen(params)
+		if 'NEWSTATESALESTAXRATE' in tmip_vars and 'USEDSTATESALESTAXRATE' in tmip_vars and 'SALESTAXSPREAD' in tmip_vars and 'REGFLATFEES' in tmip_vars and 'PROPERTYTAX' in tmip_vars:
+			self._manipulate_tax(params)
+		if 'PROPCASHOUT' in tmip_vars:
+			self._manipulate_cashout(params)
+		if 'PROPPAYDHH' in tmip_vars:
+			self._manipulate_paydhh(params)
+		if 'LEASEDFEESPM' in tmip_vars and 'PROPDVMTAPPLICABLELEASEDFEES' in tmip_vars:
+			self._manipulate_leasedfees(params)
+		if 'NEWVEHSALESPROP' in tmip_vars and 'LEASEDVEHSALESPROP' in tmip_vars and 'USEDVEHSALESPROP' in tmip_vars:
+			self._manipulate_vehsales(params)
 
 		_logger.info(f"{self.config['model_type']} SETUP complete")
 
@@ -869,6 +891,126 @@ class VEModel(FilesCoreModel):
 
 		return self._manipulate_by_categorical_drop_in(params, 'OPERATIONS', self.scenario_input_dirs.get('OPERATIONS'))
 
+	def _manipulate_tax(self, params):
+		"""
+		Prepare the azone tax file.
+        Type: Insertion
+		Args:
+			params (dict):
+				The parameters for this experiment, including both
+				exogenous uncertainties and policy levers.
+		"""
+
+		tax_df = pd.read_csv(join_norm(scenario_input(self.scenario_input_dirs.get('NewStateSalesTaxRate'),'azone_hh_veh_own_taxes.csv')))
+
+		future_year = self.model_future_year
+
+		tax_df.loc[tax_df.Year == future_year, 'NewVehSalesTaxRate'] = params['NewStateSalesTaxRate']
+		tax_df.loc[tax_df.Year == future_year, 'UsedVehSalesTaxRate'] = params['UsedStateSalesTaxRate']
+		tax_df.loc[tax_df.Year == future_year, 'SalesTaxSpread'] = int(params['SalesTaxSpread'])
+		tax_df.loc[tax_df.Year == future_year, 'VehRegFlatRateFee.2022'] = params['RegFlatFees']
+		tax_df.loc[tax_df.Year == future_year, 'VehOwnAdValoremTax'] = params['PropertyTax']
+		
+		out_filename = join_norm(
+			self.resolved_model_path, 'inputs', 'azone_hh_veh_own_taxes.csv'
+		)
+		_logger.debug(f"writing updates to: {out_filename}")
+		tax_df.to_csv(out_filename, index=False)
+
+	def _manipulate_cashout(self, params):
+		"""
+		Prepare the parking cashout file.
+        Type: Insertion
+		Args:
+			params (dict):
+				The parameters for this experiment, including both
+				exogenous uncertainties and policy levers.
+		"""
+
+		cashout_df = pd.read_csv(join_norm(scenario_input(self.scenario_input_dirs.get('PropCashOut'),'marea_parking-cost_by_area-type.csv')))
+
+		future_year = self.model_future_year
+
+		cashout_df.loc[cashout_df.Year == future_year, 'CenterPropCashOut'] = params['PropCashOut']
+		cashout_df.loc[cashout_df.Year == future_year, 'InnerPropCashOut'] = params['PropCashOut']
+		cashout_df.loc[cashout_df.Year == future_year, 'OuterPropCashOut'] = params['PropCashOut']
+		
+		out_filename = join_norm(
+			self.resolved_model_path, 'inputs', 'marea_parking-cost_by_area-type.csv'
+		)
+		_logger.debug(f"writing updates to: {out_filename}")
+
+
+	def _manipulate_paydhh(self, params):
+		"""
+		Prepare the payd household proportion file.
+        Type: Insertion
+		Args:
+			params (dict):
+				The parameters for this experiment, including both
+				exogenous uncertainties and policy levers.
+		"""
+
+		paydhh_df = pd.read_csv(join_norm(scenario_input(self.scenario_input_dirs.get('PropPayDHh'),'azone_payd_insurance_prop.csv')))
+
+		future_year = self.model_future_year
+
+		paydhh_df.loc[paydhh_df.Year == future_year, 'PaydHhProp'] = params['PropPayDHh']
+		
+		out_filename = join_norm(
+			self.resolved_model_path, 'inputs', 'azone_payd_insurance_prop.csv'
+		)
+		_logger.debug(f"writing updates to: {out_filename}")
+		paydhh_df.to_csv(out_filename, index=False)
+
+
+	def _manipulate_leasedfees(self, params):
+		"""
+		Prepare the payd household proportion file.
+        Type: Insertion
+		Args:
+			params (dict):
+				The parameters for this experiment, including both
+				exogenous uncertainties and policy levers.
+		"""
+
+		leasedfees_df = pd.read_csv(join_norm(scenario_input(self.scenario_input_dirs.get('LeasedFeesPM'),'region_leased_veh_fees.csv')))
+
+		future_year = self.model_future_year
+
+		leasedfees_df.loc[leasedfees_df.Year == future_year, 'LeasedFeesPerMi.2017'] = params['LeasedFeesPM']
+		leasedfees_df.loc[leasedfees_df.Year == future_year, 'PropDvmtApplicable'] = params['PropDvmtApplicableLeasedFees']
+		
+		out_filename = join_norm(
+			self.resolved_model_path, 'inputs', 'region_leased_veh_fees.csv'
+		)
+		_logger.debug(f"writing updates to: {out_filename}")
+		leasedfees_df.to_csv(out_filename, index=False)
+
+
+	def _manipulate_vehsales(self, params):
+		"""
+		Prepare the payd household proportion file.
+        Type: Insertion
+		Args:
+			params (dict):
+				The parameters for this experiment, including both
+				exogenous uncertainties and policy levers.
+		"""
+
+		sales_df = pd.read_csv(join_norm(scenario_input(self.scenario_input_dirs.get('NewVehSalesProp'),'region_veh_sales_proportion.csv')))
+
+		future_year = self.model_future_year
+
+		sales_df.loc[sales_df.Year == future_year, 'New'] = params['NewVehSalesProp']
+		sales_df.loc[sales_df.Year == future_year, 'Used'] = params['UsedVehSalesProp']
+		sales_df.loc[sales_df.Year == future_year, 'Leased'] = params['LeasedVehSalesProp']
+		
+		out_filename = join_norm(
+			self.resolved_model_path, 'inputs', 'region_veh_sales_proportion.csv'
+		)
+		_logger.debug(f"writing updates to: {out_filename}")
+		sales_df.to_csv(out_filename, index=False)
 
 	def run(self):
 		"""

@@ -1,0 +1,522 @@
+---
+# VEState Scope Definition for Policy Sensitivity
+
+scope:
+    name: PolicySensitivity
+    desc: ODOT pricing policy sensitivity test for ODOT VE-State model
+
+inputs:
+
+    # STATE SALES TAX
+    NewStateSalesTaxRate:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: TAXES
+        # FILENAME: azone_hh_veh_own_taxes.csv
+        # MODEL NAME: _manipulate_tax
+        shortname: New Sales Tax
+        address: TAXES
+        ptype: lever
+        dtype: float
+        desc: Sales tax on new vehicles
+        default: 0
+        min: 0  #   # 0 % sales tax rate
+        max: .5  #   # 50 % sales tax rate
+
+    UsedStateSalesTaxRate:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: TAXES
+        # FILENAME: azone_hh_veh_own_taxes.csv
+        # MODEL NAME: _manipulate_tax
+        shortname: Used Sales Tax
+        address: TAXES
+        ptype: lever
+        dtype: float
+        desc: Sales tax on used vehicles
+        default: .05
+        min: 0  #   # 0 % sales tax rate
+        max: .5  #   # 50 % sales tax rate
+
+    SalesTaxSpread:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: TAXES
+        # FILENAME: azone_hh_veh_own_taxes.csv
+        # MODEL NAME: _manipulate_tax
+        shortname: Sales Tax Spread
+        address: TAXES
+        ptype: lever
+        dtype: cat
+        desc: Spread years for sales tax
+        default: 3
+        values:
+            - 1    # Spread accross one year
+            - 2    # Spread accross two years
+            - 3    # Spread accross three years
+
+    RegFlatFees:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: TAXES
+        # FILENAME: azone_hh_veh_own_taxes.csv
+        # MODEL NAME: _manipulate_tax
+        shortname: Registration Fees
+        address: TAXES
+        ptype: lever
+        dtype: float
+        desc: Registration flat fees on all owned vehicles
+        default: 136
+        min: 10  #   # 10 USD
+        max: 500  #   # 500 USD
+
+    PropertyTax:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: TAXES
+        # FILENAME: azone_hh_veh_own_taxes.csv
+        # MODEL NAME: _manipulate_tax
+        shortname: Registration Fees
+        address: TAXES
+        ptype: lever
+        dtype: float
+        desc: Registration flat fees on all owned vehicles
+        default: 0
+        min: 0    # 0 % property tax rate
+        max: .2  # 20 % property tax rate
+
+    PropCashOut:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: CASHOUT
+        # FILENAME: marea_parking-cost_by_area-type.csv
+        # MODEL NAME: _manipulate_cashout
+        shortname: Proportion Cash Out
+        address: CASHOUT
+        ptype: uncertainty
+        dtype: float
+        desc: proportion cash out
+        default: 0.8
+        min: 0    # 0   % proportion cash out
+        max: 1    # 100 % proportion cash out
+
+    PropPayDHh:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: PAYDHH
+        # FILENAME: azone_payd_insurance_prop.csv
+        # MODEL NAME: _manipulate_paydhh
+        shortname: Proportion PayD
+        address: PAYDHH
+        ptype: uncertainty
+        dtype: float
+        desc: proportion of household that do pay as you drive
+        default: 0.8
+        min: 0    # 0   % proportion payd household
+        max: 1    # 100 % proportion payd household
+
+    LeasedFeesPM:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: LEASEDFEES
+        # FILENAME: region_leased_veh_fees.csv
+        # MODEL NAME: _manipulate_leasedfees
+        shortname: LeasedFees
+        address: LEASEDFEES
+        ptype: lever
+        dtype: float
+        desc: per mile additional depreciation fees on leased vehicles
+        default: 0.1
+        min: 0    # 0   USD per mile leased fees
+        max: .20    # 0.20 USD per mile leased fees
+
+    PropDvmtApplicableLeasedFees:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: LEASEDFEES
+        # FILENAME: region_leased_veh_fees.csv
+        # MODEL NAME: _manipulate_leasedfees
+        shortname: Proportion Dvmt applicable
+        address: LEASEDFEES
+        ptype: lever
+        dtype: float
+        desc: per mile additional depreciation fees on leased vehicles
+        default: 0.9
+        min: 0    # 0   % proportion of dvmt applicable for leased fees
+        max: 1    # 100 % proportion of dvmt applicable for leased fees
+
+    NewVehSalesProp:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: VEHSALES
+        # FILENAME: region_veh_sales_proportion.csv
+        # MODEL NAME: _manipulate_vehsales
+        shortname: New sale prop
+        address: VEHSALES
+        ptype: uncertainty
+        dtype: float
+        desc: proportion of sales that are new
+        default: 0.15
+        min: 0.05    # 5   % proportion of vehicle sales that are new
+        max: .3    # 30 % proportion of vehicle sales that are new
+
+    LeasedVehSalesProp:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: VEHSALES
+        # FILENAME: region_veh_sales_proportion.csv
+        # MODEL NAME: _manipulate_vehsales
+        shortname: Leased sale prop
+        address: VEHSALES
+        ptype: uncertainty
+        dtype: float
+        desc: proportion of sales that are leased
+        default: 0.03
+        min: 0.01    # 1   % proportion of vehicle sales that are leased
+        max: .1    # 10 % proportion of vehicle sales that are leased
+
+    UsedVehSalesProp:
+        # TMIP - INSERTION
+        # SCENARIOFOLDER: VEHSALES
+        # FILENAME: region_veh_sales_proportion.csv
+        # MODEL NAME: _manipulate_vehsales
+        shortname: Used sale prop
+        address: VEHSALES
+        ptype: uncertainty
+        dtype: float
+        desc: proportion of sales that are used
+        default: 0.43
+        min: 0.35    # 35   % proportion of vehicle sales that are used
+        max: 0.55    # 44   % proportion of vehicle sales that are used
+
+outputs:
+   OwnedVehicles:
+     kind: info
+     desc: Number of vehicles owned
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - OwnedVehicles
+       - VE-State-odot-ICFpolicy.2050
+   NewVehSales:
+     kind: info
+     desc: Number of vehicles sold as new
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - NewVehSales
+       - VE-State-odot-ICFpolicy.2050
+   LeasedVehSales:
+     kind: info
+     desc: Number of vehicles leased
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - LeasedVehSales
+       - VE-State-odot-ICFpolicy.2050
+   UsedVehSales:
+     kind: info
+     desc: Number of vehicles sold as used
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - UsedVehSales
+       - VE-State-odot-ICFpolicy.2050
+   SalesPropNewVeh:
+     kind: info
+     desc: Proportion of vehicles sold as new
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - SalesPropNewVeh
+       - VE-State-odot-ICFpolicy.2050
+   SalesPropLeasedVeh:
+     kind: info
+     desc: Proportion of vehicles leased
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - SalesPropLeasedVeh
+       - VE-State-odot-ICFpolicy.2050
+   SalesPropUsedVeh:
+     kind: info
+     desc: Proportion of vehicles sold as used
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - SalesPropUsedVeh
+       - VE-State-odot-ICFpolicy.2050
+   HhDvmt:
+     kind: info
+     desc: Daily vehicle miles traveled by households
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - HhDvmt
+       - VE-State-odot-ICFpolicy.2050
+   VehOwnDvmt:
+     kind: info
+     desc: Daily vehicle miles traveled by households
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - VehOwnDvmt
+       - VE-State-odot-ICFpolicy.2050
+   NewSaleDvmt:
+     kind: info
+     desc: Daily vehicle miles traveled by households
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - NewSaleDvmt
+       - VE-State-odot-ICFpolicy.2050
+   LeasedSaleDvmt:
+     kind: info
+     desc: Daily vehicle miles traveled by households
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - LeasedSaleDvmt
+       - VE-State-odot-ICFpolicy.2050
+   UsedSaleDvmt:
+     kind: info
+     desc: Daily vehicle miles traveled by households
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - UsedSaleDvmt
+       - VE-State-odot-ICFpolicy.2050
+   AnnualSalesTax:
+     kind: info
+     desc: Annual sales tax revenue
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - AnnualSalesTax
+       - VE-State-odot-ICFpolicy.2050
+   NewSalesTax:
+     kind: info
+     desc: Annual sales tax revenue in new vehicles
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - NewSalesTax
+       - VE-State-odot-ICFpolicy.2050
+   LeasedSalesTax:
+     kind: info
+     desc: Annual sales tax revenue in leased vehicles
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - LeasedSalesTax
+       - VE-State-odot-ICFpolicy.2050
+   UsedSalesTax:
+     kind: info
+     desc: Annual sales tax revenue in used vehicles
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - UsedSalesTax
+       - VE-State-odot-ICFpolicy.2050
+   SalesTaxPM:
+     kind: info
+     desc: sales tax cost per mile
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - SalesTaxPM
+       - VE-State-odot-ICFpolicy.2050
+   NewSalesTaxPM:
+     kind: info
+     desc: sales tax cost per mile for new sale vehicles
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - NewSalesTaxPM
+       - VE-State-odot-ICFpolicy.2050
+   LeasedSalesTaxPM:
+     kind: info
+     desc: sales tax cost per mile for leased vehicles
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - LeasedSalesTaxPM
+       - VE-State-odot-ICFpolicy.2050
+   UsedSalesTaxPM:
+     kind: info
+     desc: sales tax cost per mile for used vehicles sold
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - UsedSalesTaxPM
+       - VE-State-odot-ICFpolicy.2050
+   AnnualRegFees:
+     kind: info
+     desc: Annual Registration fees in used vehicles
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - AnnualRegFees
+       - VE-State-odot-ICFpolicy.2050
+   RegFeesPM:
+     kind: info
+     desc: Registration fees per mile
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - RegFeesPM
+       - VE-State-odot-ICFpolicy.2050
+   PayDInsHh:
+     kind: info
+     desc: Number of households that has pay as you drive insurance
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - PayDInsHh
+       - VE-State-odot-ICFpolicy.2050
+   PayDInsHhProp:
+     kind: info
+     desc: proportion of households that has pay as you drive insurance
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - PayDInsHhProp
+       - VE-State-odot-ICFpolicy.2050
+#   PayDInsCost:
+#     kind: info
+#     desc: Daily pay as you drive insurance
+#     transform: none
+#     metamodeltype: log
+#     parser:
+#       file: pricing_output.csv
+#       loc:
+#       - PayDInsCost
+#       - VE-State-odot-ICFpolicy.2050
+   AnnPayDInsCost:
+     kind: info
+     desc: Annual pay as you drive insurance
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - AnnPayDInsCost
+       - VE-State-odot-ICFpolicy.2050
+   DvmtPayDIns:
+     kind: info
+     desc: Dvmt of vehicle owned that has pay as you drive insurance
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - DvmtPayDIns
+       - VE-State-odot-ICFpolicy.2050
+   PayDInsCostPM:
+     kind: info
+     desc: per mile pay as you drive insurance
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - PayDInsCostPM
+       - VE-State-odot-ICFpolicy.2050
+   PropertyTaxCost:
+     kind: info
+     desc: Property tax cost
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - PropertyTaxCost
+       - VE-State-odot-ICFpolicy.2050
+   PropertyTaxPM:
+     kind: info
+     desc: Property tax cost
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - PropertyTaxPM
+       - VE-State-odot-ICFpolicy.2050
+   VehOwnCost:
+     kind: info
+     desc: Ownership cost
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - VehOwnCost
+       - VE-State-odot-ICFpolicy.2050
+   VehOwnCostPM:
+     kind: info
+     desc: Ownership tax cost
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - VehOwnCostPM
+       - VE-State-odot-ICFpolicy.2050
+   VehOpCost:
+     kind: info
+     desc: Vehicle operating cost
+     transform: none
+     metamodeltype: log
+     parser:
+       file: pricing_output.csv
+       loc:
+       - VehOpCost
+       - VE-State-odot-ICFpolicy.2050
+   VehOpCostPM:
+     kind: info
+     desc: Vehicle operating cost
+     transform: none
+     metamodeltype: linear
+     parser:
+       file: pricing_output.csv
+       loc:
+       - VehOpCostPM
+       - VE-State-odot-ICFpolicy.2050
+
